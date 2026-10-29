@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EdgeFinder</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">◆</span> EdgeFinder
+    <span id="mode-badge" class="badge"></span>
+  </div>
+  <div class="top-right">
+    <div id="credits" class="credits" title="The Odds API credits"></div>
+    <button id="btn-refresh" class="btn primary">Refresh odds</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="value" class="active">Value bets</button>
+  <button data-tab="acca">Acca builder</button>
+  <button data-tab="tracker">Bet tracker</button>
+  <button data-tab="settings">Settings</button>
+</nav>
+
+<main>
+  <!-- VALUE BETS -->
+  <section id="tab-value" class="tab active">
+    <div class="chips" id="group-chips"></div>
+    <div class="filters">
+      <label>Market
+        <select id="f-market">
+          <option value="">All markets</option>
+          <option value="h2h">Match result / moneyline</option>
+          <option value="spreads">Handicap / spread</option>
+          <option value="totals">Totals</option>
+          <option value="btts">Both teams to score</option>
+          <option value="props">Player props</option>
+        </select>
+      </label>
+      <label>Min edge %
+        <input id="f-edge" type="number" step="0.5" min="-20" max="50">
+      </label>
+      <label class="check"><input id="f-all" type="checkbox"> Price-check mode (show every priced selection)</label>
+      <label class="check"><input id="f-confirmed" type="checkbox"> Confirmed prices only</label>
+    </div>
+    <div class="tiles" id="value-tiles"></div>
+    <div class="note" id="value-note"></div>
+    <div class="table-wrap">
+      <table class="grid" id="value-table">
+        <thead><tr>
+          <th>Kick-off</th><th>Event</th><th>Bet</th><th class="num">Fair</th>
+          <th class="num" title="Type the price you see on bet365 to confirm the edge">bet365 price</th>
+          <th class="num" title="Minimum bet365 price for your min-edge threshold">Need ≥</th>
+          <th class="num">Edge</th><th class="num">Stake</th><th>Basis</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <details class="panel" id="props-panel">
+      <summary>Player props &amp; BTTS: load per event (costs credits)</summary>
+      <p class="muted">The bulk odds feed doesn't include player props or BTTS. Load them for the games you care
+        about. Each load costs <em>markets × regions</em> credits.</p>
+      <div id="props-list"></div>
+    </details>
+  </section>
+
+  <!-- ACCA BUILDER -->
+  <section id="tab-acca" class="tab">
+    <form id="acca-form" class="panel acca-form">
+      <div class="row">
+        <label>Legs
+          <div class="stepper"><button type="button" data-step="-1">−</button><input id="a-legs" type="number" min="2" max="14" value="3"><button type="button" data-step="1">+</button></div>
+        </label>
+        <label>Leg odds from <input id="a-min" type="number" step="0.05" value="1.25"></label>
+        <label>to <input id="a-max" type="number" step="0.05" value="3.00"></label>
+        <label>Kick-off from <input id="a-start" type="datetime-local"></label>
+        <label>until <input id="a-end" type="datetime-local"></label>
+      </div>
+      <div class="row">
+        <div class="field"><span class="field-label">Sports</span><div class="chips small" id="a-groups"></div></div>
+      </div>
+      <div class="row">
+        <div class="field"><span class="field-label">Markets</span>
+          <div class="chips small" id="a-markets">
+            <button type="button" class="chip on" data-v="h2h">Result / moneyline</button>
+            <button type="button" class="chip on" data-v="spreads">Handicap / spread</button>
+            <button type="button" class="chip on" data-v="totals">Totals</button>
+            <button type="button" class="chip on" data-v="btts">BTTS</button>
+            <button type="button" class="chip" data-v="props">Player props</button>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <label class="check"><input id="a-boost" type="checkbox" checked> Apply bet365 Acca Boost</label>
+        <label class="check"><input id="a-2up" type="checkbox" checked> Count 2-Up early payout</label>
+        <label class="check"><input id="a-confirmed" type="checkbox"> Confirmed bet365 prices only</label>
+        <button class="btn primary" type="submit">Build most profitable acca</button>
+      </div>
+    </form>
+    <div id="acca-results"></div>
+  </section>
+
+  <!-- TRACKER -->
+  <section id="tab-tracker" class="tab">
+    <div class="tiles" id="tracker-tiles"></div>
+    <div class="panel"><h3>Cumulative profit</h3><div id="pnl-chart" class="chart"></div></div>
+    <div class="table-wrap">
+      <table class="grid" id="bets-table">
+        <thead><tr><th>Placed</th><th>Bet</th><th class="num">Odds</th><th class="num">Stake</th>
+          <th class="num" title="Closing-line value: price taken vs fair price at kick-off">CLV</th>
+          <th>Result</th><th class="num">P&amp;L</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="tab">
+    <form id="settings-form" class="settings-grid"></form>
+    <div class="panel"><h3>Models</h3><div id="model-status"></div>
+      <button class="btn" id="btn-rebuild">Refit models</button></div>
+  </section>
+</main>
+
+<!-- refresh dialog -->
+<dialog id="refresh-dialog">
+  <h3>Refresh odds</h3>
+  <p class="muted">Pick what to scan. Sports with no games in your look-ahead window are skipped for free.</p>
+  <div class="chips" id="r-groups"></div>
+  <div id="r-plan" class="plan"></div>
+  <div class="dialog-actions">
+    <button class="btn" id="r-cancel">Cancel</button>
+    <button class="btn" id="r-estimate">Estimate cost</button>
+    <button class="btn primary" id="r-go">Refresh</button>
+  </div>
+</dialog>
+
+<!-- log bet dialog -->
+<dialog id="bet-dialog">
+  <h3>Log bet</h3>
+  <p id="b-desc"></p>
+  <div class="row">
+    <label>Odds taken <input id="b-odds" type="number" step="0.01" min="1.01"></label>
+    <label>Stake <input id="b-stake" type="number" step="0.5" min="0.5"></label>
+  </div>
+  <p class="muted" id="b-hint"></p>
+  <div class="dialog-actions">
+    <button class="btn" id="b-cancel">Cancel</button>
+    <button class="btn primary" id="b-save">Log bet</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
