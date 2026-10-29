@@ -1,0 +1,595 @@
+<title>EdgeFinder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone-first betting slip. Sticky header, filter strip, stacked bet cards, fixed bottom tab bar.
+   Deliberately single (dark) theme, like a trading terminal. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1318;
+  --surface: #151c23;
+  --surface-2: #1c252e;
+  --line: #2a3540;
+  --fg: #e4eaf0;
+  --muted: #8796a5;
+  --accent: #f2b134;
+  --accent-ink: #2a1d00;
+  --pos: #3ecf8e;
+  --neg: #f0656b;
+  --info: #6fb3ff;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --tabbar: 62px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--font-body); font-size: 15px; line-height: 1.45; -webkit-tap-highlight-color: transparent; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 760px; margin: 0 auto; }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 10px; }
+.brand { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.brand h1 { font-family: var(--font-display); font-size: 24px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+.brand h1 span { color: var(--accent); }
+.pill { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.pill.demo { background: var(--accent); color: var(--accent-ink); }
+.pill.live { background: var(--pos); color: #04210f; }
+.fresh { font-size: 12px; color: var(--muted); text-align: right; }
+.iconbtn { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font: 600 13px var(--font-body); cursor: pointer; white-space: nowrap; }
+.iconbtn:disabled { opacity: .55; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+main { padding-block: 14px calc(var(--tabbar) + env(safe-area-inset-bottom, 0px) + 24px); }
+.view { display: grid; gap: 14px; }
+.strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.strip::-webkit-scrollbar { display: none; }
+.chip { flex: none; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; font: 600 13px var(--font-body); cursor: pointer; }
+.chip.on { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+label.f { display: grid; gap: 4px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; flex: 1 1 120px; min-width: 0; }
+label.c { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+input, select { background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; font: 15px var(--font-body); width: 100%; min-width: 0; }
+input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+.mono, input[type=number] { font-family: var(--font-mono); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+@media (min-width: 620px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.stat { background: var(--surface); padding: 10px 12px; min-width: 0; }
+.stat .k { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.stat .v { font-family: var(--font-display); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .s { font-size: 12px; color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+.banner { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+.banner b { color: var(--fg); }
+.cards { display: grid; gap: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.card.hot { border-color: color-mix(in srgb, var(--pos) 50%, var(--line)); }
+.top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.edge { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1; }
+.event { font-size: 13px; color: var(--muted); }
+.pick { font-weight: 600; font-size: 16px; }
+.pick small { font-weight: 400; color: var(--muted); font-size: 13px; }
+.nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-variant-numeric: tabular-nums; }
+.nums div { min-width: 0; }
+.nums .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.nums .v { font-family: var(--font-mono); font-size: 15px; }
+.act { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.act input { font-size: 16px; }
+.act input.set { border-color: var(--accent); }
+.btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 10px 16px; font: 700 14px var(--font-body); cursor: pointer; }
+.btn.ghost { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); }
+.btn.wide { width: 100%; padding: 13px; font-size: 16px; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
+.tag.sharp { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, transparent); }
+.tag.model { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.tag.promo { color: var(--pos); border-color: color-mix(in srgb, var(--pos) 45%, transparent); }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+.empty { text-align: center; color: var(--muted); padding: 36px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 12px; }
+.panel h2 { font-family: var(--font-display); font-size: 22px; margin: 0; }
+.stepper { display: grid; grid-template-columns: 44px 1fr 44px; }
+.stepper button { background: var(--surface-2); color: var(--fg); border: 1px solid var(--line); font-size: 20px; cursor: pointer; }
+.stepper button:first-child { border-radius: 8px 0 0 8px; }
+.stepper button:last-child { border-radius: 0 8px 8px 0; }
+.stepper input { border-radius: 0; text-align: center; }
+.wrapchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.ticket h3 { font-family: var(--font-display); font-size: 24px; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; font-size: 13px; color: var(--muted); }
+.facts b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.leg { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 14px; }
+.leg .r { text-align: right; font-family: var(--font-mono); }
+.leg .sub { color: var(--muted); font-size: 12px; }
+.chart svg { width: 100%; height: 140px; display: block; }
+.betrow { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; }
+.betrow select { width: auto; padding: 6px 8px; font-size: 13px; }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.tabbar nav { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 760px; margin: 0 auto; height: var(--tabbar); }
+.tabbar button { background: none; border: 0; color: var(--muted); font: 600 12px var(--font-body); display: grid; place-items: center; gap: 2px; cursor: pointer; padding: 6px 0; }
+.tabbar button svg { width: 22px; height: 22px; }
+.tabbar button[aria-selected="true"] { color: var(--accent); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar) + env(safe-area-inset-bottom, 0px) + 12px); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; max-width: calc(100% - 32px); z-index: 8; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<header>
+  <div class="gutter bar">
+    <div class="brand"><h1>Edge<span>Finder</span></h1><span class="pill" id="mode" hidden></span></div>
+    <div class="row" style="flex-wrap:nowrap;align-items:center">
+      <div class="fresh" id="fresh">Loading…</div>
+      <button class="iconbtn" id="refresh" type="button">Refresh</button>
+    </div>
+  </div>
+</header>
+
+<main class="gutter">
+  <!-- VALUE BETS -->
+  <section class="view" id="v-bets">
+    <div class="strip" id="groups"></div>
+    <div class="strip" id="markets"></div>
+    <div class="stats" id="stats"></div>
+    <div id="board-note"></div>
+    <div class="cards" id="cards"></div>
+    <button class="btn ghost wide" id="more" type="button" hidden>Show more</button>
+  </section>
+
+  <!-- ACCA -->
+  <section class="view" id="v-acca" hidden>
+    <form class="panel" id="acca-form">
+      <h2>Acca builder</h2>
+      <div class="row">
+        <label class="f">Legs
+          <div class="stepper"><button type="button" data-s="-1" aria-label="Fewer legs">−</button><input id="a-legs" type="number" inputmode="numeric" min="2" max="14" value="3"><button type="button" data-s="1" aria-label="More legs">+</button></div>
+        </label>
+        <label class="f">Within (hours)<input id="a-hours" type="number" inputmode="numeric" step="12" value="72"></label>
+      </div>
+      <div class="row">
+        <label class="f">Leg odds from<input id="a-min" type="number" inputmode="decimal" step="0.05" value="1.25"></label>
+        <label class="f">to<input id="a-max" type="number" inputmode="decimal" step="0.05" value="3"></label>
+      </div>
+      <div><div class="note">Sports</div><div class="wrapchips" id="a-groups"></div></div>
+      <div><div class="note">Markets</div><div class="wrapchips" id="a-markets"></div></div>
+      <label class="c"><input id="a-boost" type="checkbox" checked> Apply bet365 Acca Boost</label>
+      <label class="c"><input id="a-2up" type="checkbox" checked> Count 2-Up early payout</label>
+      <button class="btn wide" type="submit">Build most profitable acca</button>
+    </form>
+    <div class="cards" id="accas"></div>
+  </section>
+
+  <!-- TRACKER -->
+  <section class="view" id="v-track" hidden>
+    <div class="stats" id="t-stats"></div>
+    <div class="panel"><h2>Profit</h2><div class="chart" id="t-chart"></div></div>
+    <div class="cards" id="t-bets"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-set" hidden>
+    <form class="panel" id="set-form">
+      <h2>Staking</h2>
+      <div class="row">
+        <label class="f">Bankroll £<input id="s-bank" type="number" inputmode="decimal" step="50"></label>
+        <label class="f">Min edge %<input id="s-edge" type="number" inputmode="decimal" step="0.5"></label>
+      </div>
+      <div class="row">
+        <label class="f">Kelly fraction<input id="s-kelly" type="number" inputmode="decimal" step="0.05"></label>
+        <label class="f">Max stake % per bet<input id="s-max" type="number" inputmode="decimal" step="0.5"></label>
+      </div>
+      <button class="btn wide" type="submit">Save</button>
+      <p class="note" id="s-sync"></p>
+    </form>
+    <div class="panel" id="about">
+      <h2>How it works</h2>
+      <p class="note">A scheduled Claude task fetches odds, fits the models and writes the priced board here. <b>Refresh</b> runs that task now; new prices land in about five minutes.</p>
+      <p class="note">Fair prices come from Pinnacle and exchange odds with the margin removed, blended with a Dixon-Coles football model and points ratings for NFL, NBA and college sports. Edge = fair probability × bet365 odds − 1. On football match results, the chance of going two goals up without winning is added for bet365's 2-Up payout.</p>
+      <p class="note">Type the price bet365 shows into a card to confirm the edge. Your prices, settings and bets are saved to your account and sync across devices.</p>
+      <p class="note" id="pipeline"></p>
+      <p class="note">Please gamble responsibly. BeGambleAware and GamStop can help.</p>
+    </div>
+  </section>
+</main>
+
+<div class="tabbar"><nav role="tablist">
+  <button role="tab" aria-selected="true" data-v="bets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Value</button>
+  <button role="tab" aria-selected="false" data-v="acca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Acca</button>
+  <button role="tab" aria-selected="false" data-v="track"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Bets</button>
+  <button role="tab" aria-selected="false" data-v="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+</nav></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+const GROUPS = { football_eng: "Football (Eng)", nfl: "NFL", nba: "NBA", ncaaf: "College FB", ncaab: "College BB", other: "Other" };
+const MARKETS = { h2h: "Result", spreads: "Handicap", totals: "Totals", btts: "BTTS", props: "Props" };
+const DEFAULT_PREFS = { bankroll: 1000, min_edge: 0.03, kelly: 0.25, max_stake: 0.02, acca_max: 0.01 };
+const PAGE = 40;
+
+const S = {
+  rows: [], meta: null, prefs: { ...DEFAULT_PREFS }, prices: {}, bets: [],
+  group: "", market: "", shown: PAGE, db: null, uid: null, mcp: null, triggerId: null,
+};
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (v, d = 1) => (v == null || !isFinite(v) ? "–" : `${(v * 100).toFixed(d)}%`);
+const odds = (v) => (v == null || !isFinite(v) ? "–" : Number(v).toFixed(2));
+const money = (v) => `${v < 0 ? "-" : ""}£${Math.abs(v).toFixed(2)}`;
+const cls = (v) => (v == null ? "" : v > 0 ? "pos" : v < 0 ? "neg" : "");
+
+function toast(msg, ms = 3500) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, ms);
+}
+function when(iso) {
+  const d = new Date(iso), now = new Date();
+  const tm = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === now.toDateString()) return `Today ${tm}`;
+  if (d.toDateString() === new Date(now.getTime() + 864e5).toDateString()) return `Tomorrow ${tm}`;
+  return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} ${tm}`;
+}
+function ago(iso) {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return "just now"; if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60); return h < 48 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
+}
+
+// ---------- pricing (mirrors app/pricing.py finalise) ----------
+function stakeFor(p, o, cap) {
+  if (!(o > 1)) return 0;
+  const f = Math.max((p * o - 1) / (o - 1), 0) * S.prefs.kelly;
+  const a = S.prefs.bankroll * Math.min(f, cap);
+  return a >= 0.5 ? Math.floor(a * 2) / 2 : 0;
+}
+function priced(r) {
+  let ref = null, src = null;
+  if (S.prices[r.sel_id]) { ref = S.prices[r.sel_id]; src = "you"; }
+  else if (r.bet365_price) { ref = r.bet365_price; src = "bet365"; }
+  else if (r.median_price) { ref = r.median_price; src = "est"; }
+  const p = r.eff_prob ?? r.fair_prob;
+  const edge = ref ? p * ref - 1 : null;
+  return { ...r, ref, src, edge, stake: edge > 0 ? stakeFor(p, ref, S.prefs.max_stake) : 0, need: (1 + S.prefs.min_edge) / p };
+}
+const upcoming = () => S.rows.filter((r) => new Date(r.commence_time) > new Date());
+
+// ---------- tabs ----------
+document.querySelectorAll(".tabbar button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tabbar button").forEach((x) => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".view").forEach((v) => { v.hidden = v.id !== `v-${b.dataset.v}`; });
+  if (b.dataset.v === "track") renderTracker();
+  window.scrollTo(0, 0);
+}));
+
+// ---------- value board ----------
+function strip(el, items, current, key) {
+  $(el).innerHTML = Object.entries({ "": key === "group" ? "All sports" : "All markets", ...items })
+    .map(([k, v]) => `<button type="button" class="chip ${k === current ? "on" : ""}" data-k="${k}">${v}</button>`).join("");
+}
+$("#groups").addEventListener("click", (e) => { const k = e.target.dataset.k; if (k == null) return; S.group = k; S.shown = PAGE; renderBoard(); });
+$("#markets").addEventListener("click", (e) => { const k = e.target.dataset.k; if (k == null) return; S.market = k; S.shown = PAGE; renderBoard(); });
+$("#more").addEventListener("click", () => { S.shown += PAGE; renderBoard(); });
+
+function tags(r) {
+  const t = [r.source === "sharp" ? `<span class="tag sharp">Sharp</span>` : r.source === "consensus" ? `<span class="tag">Consensus</span>` : `<span class="tag model">Model only</span>`];
+  if (r.model_prob != null && r.source !== "model") t.push(`<span class="tag model">Model ${pct(r.model_weight, 0)}</span>`);
+  if (r.promo_bonus > 0.0005) t.push(`<span class="tag promo">2-Up +${pct(r.promo_bonus)}</span>`);
+  return t.join("");
+}
+function card(r) {
+  const val = r.src === "you" || r.src === "bet365" ? odds(r.ref) : "";
+  const hint = r.src === "bet365" ? "bet365 price from feed" : r.src === "you" ? "your bet365 price" : r.ref ? `estimate ${odds(r.ref)}: type bet365's price` : "type bet365's price";
+  return `<article class="card ${r.edge >= S.prefs.min_edge ? "hot" : ""}" data-id="${esc(r.sel_id)}">
+    <div class="top"><span>${esc(r.sport_title)} · ${when(r.commence_time)}</span><span class="edge ${cls(r.edge)}">${r.edge == null ? "–" : (r.edge > 0 ? "+" : "") + pct(r.edge)}</span></div>
+    <div><div class="pick">${esc(r.label)} <small>${esc(r.market_label)}</small></div><div class="event">${esc(r.event_name)}</div></div>
+    <div class="nums">
+      <div><div class="k">Fair</div><div class="v">${odds(1 / r.fair_prob)}</div></div>
+      <div><div class="k">Need ≥</div><div class="v">${odds(r.need)}</div></div>
+      <div><div class="k">Stake</div><div class="v">${r.stake ? money(r.stake) : "–"}</div></div>
+    </div>
+    <div class="act">
+      <input type="number" inputmode="decimal" step="0.01" min="1.01" class="${r.src === "you" ? "set" : ""}" value="${val}" placeholder="${esc(hint)}" aria-label="bet365 price for ${esc(r.label)}">
+      <button class="btn" type="button" data-log ${r.ref ? "" : "disabled"}>Log bet</button>
+    </div>
+    <div class="tags">${tags(r)}</div>
+  </article>`;
+}
+function renderBoard() {
+  strip("#groups", GROUPS, S.group, "group");
+  strip("#markets", MARKETS, S.market, "market");
+  const m = S.market;
+  const all = upcoming().filter((r) => !S.group || r.group === S.group)
+    .filter((r) => !m || r.market === m || (m === "props" && r.market.startsWith("player_")))
+    .map(priced);
+  const value = all.filter((r) => r.edge != null && r.edge >= S.prefs.min_edge).sort((a, b) => b.edge - a.edge);
+  const yours = Object.keys(S.prices).length;
+  const avg = value.length ? value.reduce((a, r) => a + r.edge, 0) / value.length : null;
+  $("#stats").innerHTML = `
+    <div class="stat"><div class="k">Value bets</div><div class="v">${value.length}</div><div class="s">of ${all.length} priced</div></div>
+    <div class="stat"><div class="k">Avg edge</div><div class="v ${cls(avg)}">${pct(avg)}</div><div class="s">min ${pct(S.prefs.min_edge)}</div></div>
+    <div class="stat"><div class="k">Stakes</div><div class="v">${money(value.reduce((a, r) => a + r.stake, 0))}</div><div class="s">bankroll ${money(S.prefs.bankroll)}</div></div>
+    <div class="stat"><div class="k">Confirmed</div><div class="v">${value.filter((r) => r.src !== "est").length}</div><div class="s">${yours} prices you typed</div></div>`;
+  if (!S.meta) {
+    $("#board-note").innerHTML = "";
+    $("#cards").innerHTML = `<div class="empty">${S.db === false ? "Sign in to claude.ai to load prices." : "Waiting for the first price board. Tap <b>Refresh</b> to run the odds scan; it takes about five minutes."}</div>`;
+    $("#more").hidden = true;
+    return;
+  }
+  $("#board-note").innerHTML = S.meta.demo
+    ? `<div class="banner"><b>Demo prices.</b> The scan is running without an odds API key, so these markets are synthetic. Add the key to switch to live odds.</div>`
+    : `<p class="note">Bet only when bet365 shows at least the <b>Need ≥</b> price. Cards marked “estimate” use other bookmakers' prices until you type bet365's.</p>`;
+  $("#cards").innerHTML = value.slice(0, S.shown).map(card).join("") ||
+    `<div class="empty">No bets clear your ${pct(S.prefs.min_edge)} minimum edge here. Try another sport or lower the minimum in Settings.</div>`;
+  $("#more").hidden = value.length <= S.shown;
+}
+
+let priceTimer = null;
+$("#cards").addEventListener("change", (e) => {
+  if (e.target.tagName !== "INPUT") return;
+  const id = e.target.closest(".card").dataset.id, v = Number(e.target.value);
+  if (e.target.value === "") delete S.prices[id];
+  else if (v > 1) S.prices[id] = v;
+  else return toast("Enter decimal odds above 1.00");
+  const r = S.rows.find((x) => x.sel_id === id);
+  if (r && S.prices[id]) { const p = priced(r); toast(`Edge at ${odds(p.ref)}: ${pct(p.edge)}${p.edge > 0 ? `, stake ${money(p.stake)}` : ", no bet"}`); }
+  renderBoard();
+  clearTimeout(priceTimer); priceTimer = setTimeout(savePrefs, 800);
+});
+$("#cards").addEventListener("click", (e) => {
+  if (!e.target.matches("[data-log]")) return;
+  const r = priced(S.rows.find((x) => x.sel_id === e.target.closest(".card").dataset.id));
+  addBet({ kind: "single", desc: `${r.label} · ${r.market_label}`, event: r.event_name, commence_time: r.commence_time,
+           odds: r.ref, stake: r.stake || 0, prob: r.eff_prob ?? r.fair_prob,
+           legs: [{ sel_id: r.sel_id, odds: r.ref, fair: r.fair_prob }], estimated: r.src === "est" });
+});
+
+// ---------- acca builder (mirrors app/acca.py) ----------
+function chipToggle(el, items, on) {
+  $(el).innerHTML = Object.entries(items).map(([k, v]) => `<button type="button" class="chip ${on.includes(k) ? "on" : ""}" data-v="${k}">${v}</button>`).join("");
+  $(el).addEventListener("click", (e) => e.target.dataset.v && e.target.classList.toggle("on"));
+}
+chipToggle("#a-groups", GROUPS, Object.keys(GROUPS));
+chipToggle("#a-markets", MARKETS, ["h2h", "spreads", "totals", "btts"]);
+document.querySelectorAll(".stepper button").forEach((b) => b.addEventListener("click", () => {
+  const i = $("#a-legs"); i.value = Math.min(14, Math.max(2, Number(i.value) + Number(b.dataset.s)));
+}));
+const onVals = (el) => [...document.querySelectorAll(`${el} .chip.on`)].map((c) => c.dataset.v);
+
+function buildAcca() {
+  const legs = Math.min(14, Math.max(2, Number($("#a-legs").value) || 3));
+  const lo = Number($("#a-min").value) || 1.01, hi = Number($("#a-max").value) || 1000;
+  const gs = onVals("#a-groups"), ms = onVals("#a-markets");
+  const until = Date.now() + (Number($("#a-hours").value) || 1e4) * 3600e3;
+  const use2 = $("#a-2up").checked, useB = $("#a-boost").checked;
+  const table = (S.meta && S.meta.acca_boost_table) || {};
+  const minBoostOdds = (S.meta && S.meta.acca_boost_min_leg_odds) || 1.2;
+  const pool = upcoming().map(priced).filter((r) => r.ref && gs.includes(r.group) && r.ref >= lo && r.ref <= hi)
+    .filter((r) => ms.includes(r.market) || (ms.includes("props") && r.market.startsWith("player_")))
+    .filter((r) => new Date(r.commence_time).getTime() <= until)
+    .map((r) => { const p = use2 ? (r.eff_prob ?? r.fair_prob) : r.fair_prob; return { r, p, v: p * r.ref }; })
+    .filter((x) => x.v >= 0.97).sort((a, b) => b.v - a.v);
+  const per = {}, cands = [];
+  for (const x of pool) { per[x.r.event_id] = (per[x.r.event_id] || 0) + 1; if (per[x.r.event_id] <= 3) cands.push(x); }
+  const events = Object.keys(per).length;
+  if (events < legs) return { accas: [], n: cands.length, events, msg: `Only ${events} games match your filters. A ${legs}-fold needs ${legs}. Widen the odds range, time window or sports.` };
+  let beam = [{ sc: 0, idx: [], used: new Set() }];
+  for (let d = 0; d < legs; d++) {
+    const next = [];
+    for (const b of beam) {
+      for (let i = b.idx.length ? b.idx[b.idx.length - 1] + 1 : 0; i < cands.length; i++) {
+        const e = cands[i].r.event_id;
+        if (b.used.has(e)) continue;
+        next.push({ sc: b.sc + Math.log(cands[i].v), idx: [...b.idx, i], used: new Set([...b.used, e]) });
+      }
+    }
+    next.sort((a, b) => b.sc - a.sc); beam = next.slice(0, 300);
+  }
+  const accas = beam.map((b) => {
+    const ls = b.idx.map((i) => cands[i]);
+    const prob = ls.reduce((a, l) => a * l.p, 1), o = ls.reduce((a, l) => a * l.r.ref, 1);
+    const ok = useB && ls.every((l) => l.r.sport_key.startsWith("soccer_") && ["h2h", "totals", "btts"].includes(l.r.market) && l.r.ref >= minBoostOdds);
+    let n = ls.length; while (n >= 2 && table[n] == null) n--;
+    const boost = ok ? Number(table[n] || 0) : 0, pay = 1 + (o - 1) * (1 + boost), ev = prob * pay - 1;
+    return { ls, prob, o, boost, pay, ev, stake: ev > 0 ? stakeFor(prob, pay, S.prefs.acca_max) : 0 };
+  }).sort((a, b) => b.ev - a.ev).slice(0, 3);
+  return { accas, n: cands.length, events, msg: accas[0] && accas[0].ev <= 0 ? "No profitable acca exists with these filters. This is the least bad combination. Try fewer legs, or bet singles." : null };
+}
+let lastAccas = [];
+$("#acca-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (!S.rows.length) return toast("No prices loaded yet");
+  const r = buildAcca(); lastAccas = r.accas;
+  $("#accas").innerHTML = `<p class="note">Searched ${r.n} selections across ${r.events} games.</p>` +
+    (r.msg ? `<div class="banner">${esc(r.msg)}</div>` : "") +
+    r.accas.map((a, i) => `<article class="card ticket ${i === 0 && a.ev > 0 ? "hot" : ""}">
+      <h3>${i === 0 ? "Best" : `Option ${i + 1}`}: ${a.ls.length}-fold @ ${odds(a.o)}</h3>
+      <div class="facts">
+        <span>Pays <b>${odds(a.pay)}</b>${a.boost ? ` <span class="tag promo">Boost +${pct(a.boost, 0)}</span>` : ""}</span>
+        <span>Win chance <b>${pct(a.prob)}</b></span>
+        <span>Expected value <b class="${cls(a.ev)}">${pct(a.ev)}</b></span>
+        <span>Stake <b>${a.stake ? money(a.stake) : "–"}</b></span>
+      </div>
+      ${a.ls.map((l) => `<div class="leg">
+        <div><b>${esc(l.r.label)}</b> ${l.r.promo_bonus > 0.0005 && $("#a-2up").checked ? `<span class="tag promo">2-Up</span>` : ""}<div class="sub">${esc(l.r.event_name)} · ${when(l.r.commence_time)}</div></div>
+        <div class="r">${odds(l.r.ref)}<div class="sub">${l.r.src === "est" ? "estimate" : l.r.src}</div></div>
+        <div class="sub">${esc(l.r.market_label)} · break-even ${odds(1 / l.p)}</div><div class="r sub ${cls(l.v - 1)}">${pct(l.v - 1)}</div>
+      </div>`).join("")}
+      <button class="btn ghost" type="button" data-acca="${i}">Log this acca</button>
+    </article>`).join("");
+});
+$("#accas").addEventListener("click", (e) => {
+  const i = e.target.dataset.acca; if (i == null) return;
+  const a = lastAccas[Number(i)];
+  addBet({ kind: "acca", desc: `${a.ls.length}-fold: ${a.ls.map((l) => l.r.label).join(" / ")}`, event: "", commence_time: a.ls.map((l) => l.r.commence_time).sort()[0],
+           odds: a.pay, stake: a.stake || 0, prob: a.prob, legs: a.ls.map((l) => ({ sel_id: l.r.sel_id, odds: l.r.ref, fair: l.r.fair_prob })),
+           estimated: a.ls.some((l) => l.r.src === "est") });
+});
+
+// ---------- tracker ----------
+const MULT = { won: (o) => o - 1, lost: () => -1, void: () => 0, half_won: (o) => (o - 1) / 2, half_lost: () => -0.5 };
+function clv(b) {
+  const probs = b.legs.map((l) => l.close ?? null);
+  if (probs.some((p) => p == null)) return null;
+  return b.legs.reduce((a, l) => a * l.odds, 1) * probs.reduce((a, p) => a * p, 1) - 1;
+}
+function addBet(bet) {
+  if (!S.uid) return toast("Sign in to claude.ai to keep a bet log");
+  if (!(bet.odds > 1)) return toast("Type the bet365 price first");
+  bet.legs = bet.legs.map((l) => ({ ...l, close: l.fair }));
+  S.bets = [{ id: `b${Date.now().toString(36)}`, t: new Date().toISOString(), status: "open", ...bet,
+              stake: bet.stake || Math.max(1, Math.round(S.prefs.bankroll * 0.005)) }, ...S.bets];
+  saveBets();
+  toast(bet.estimated ? "Logged. Edit the odds in Bets if bet365's price differed." : "Bet logged");
+}
+function renderTracker() {
+  const settled = S.bets.filter((b) => b.status !== "open");
+  const staked = settled.reduce((a, b) => a + b.stake, 0);
+  const profit = settled.reduce((a, b) => a + b.stake * MULT[b.status](b.odds), 0);
+  const exp = settled.reduce((a, b) => a + b.stake * (b.prob * b.odds - 1), 0);
+  const clvs = S.bets.map(clv).filter((c) => c != null);
+  const avgClv = clvs.length ? clvs.reduce((a, c) => a + c, 0) / clvs.length : null;
+  $("#t-stats").innerHTML = `
+    <div class="stat"><div class="k">Profit</div><div class="v ${cls(profit)}">${money(profit)}</div><div class="s">expected ${money(exp)}</div></div>
+    <div class="stat"><div class="k">ROI</div><div class="v ${cls(profit)}">${staked ? pct(profit / staked) : "–"}</div><div class="s">on ${money(staked)}</div></div>
+    <div class="stat"><div class="k">Avg CLV</div><div class="v ${cls(avgClv)}">${pct(avgClv)}</div><div class="s">${clvs.filter((c) => c > 0).length}/${clvs.length} beat the close</div></div>
+    <div class="stat"><div class="k">Open</div><div class="v">${S.bets.length - settled.length}</div><div class="s">${money(S.bets.filter((b) => b.status === "open").reduce((a, b) => a + b.stake, 0))} at risk</div></div>`;
+  const pts = [0]; let run = 0;
+  [...settled].sort((a, b) => (a.settled || a.t).localeCompare(b.settled || b.t)).forEach((b) => { run += b.stake * MULT[b.status](b.odds); pts.push(run); });
+  if (pts.length < 3) $("#t-chart").innerHTML = `<p class="note">Settle a couple of bets to see your profit line.</p>`;
+  else {
+    const W = 320, H = 140, P = 10, lo = Math.min(...pts), hi = Math.max(...pts), span = hi - lo || 1;
+    const x = (i) => P + (i * (W - 2 * P)) / (pts.length - 1), y = (v) => H - P - ((v - lo) * (H - 2 * P)) / span;
+    const line = pts.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const col = run >= 0 ? "var(--pos)" : "var(--neg)";
+    $("#t-chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Cumulative profit ${money(run)}">
+      <line x1="${P}" x2="${W - P}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)" stroke-dasharray="4 4" fill="none"/>
+      <polygon points="${x(0)},${y(0)} ${line} ${x(pts.length - 1)},${y(0)}" fill="${col}" fill-opacity=".12"/>
+      <polyline points="${line}" fill="none" stroke="${col}" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+      <circle cx="${x(pts.length - 1)}" cy="${y(run)}" r="4" fill="${col}"/></svg>`;
+  }
+  const opts = ["open", "won", "lost", "void", "half_won", "half_lost"];
+  $("#t-bets").innerHTML = S.bets.length ? S.bets.map((b) => {
+    const pl = b.status === "open" ? null : b.stake * MULT[b.status](b.odds), c = clv(b);
+    return `<article class="card" data-b="${b.id}">
+      <div class="top"><span>${b.kind === "acca" ? "Acca" : "Single"} · ${when(b.commence_time)}</span><span class="${cls(pl)}">${pl == null ? "" : money(pl)}</span></div>
+      <div class="pick">${esc(b.desc)}</div>${b.event ? `<div class="event">${esc(b.event)}</div>` : ""}
+      <div class="row">
+        <label class="f">Odds<input type="number" inputmode="decimal" step="0.01" value="${odds(b.odds)}" data-f="odds"></label>
+        <label class="f">Stake £<input type="number" inputmode="decimal" step="0.5" value="${b.stake}" data-f="stake"></label>
+        <label class="f">Result<select data-f="status">${opts.map((o) => `<option value="${o}" ${o === b.status ? "selected" : ""}>${o.replace("_", " ")}</option>`).join("")}</select></label>
+      </div>
+      <div class="top"><span>CLV ${c == null ? "–" : `<b class="${cls(c)}">${pct(c)}</b>`}</span><button class="iconbtn" type="button" data-del>Delete</button></div>
+    </article>`;
+  }).join("") : `<div class="empty">No bets yet. Tap <b>Log bet</b> on a value card or acca.</div>`;
+}
+$("#t-bets").addEventListener("change", (e) => {
+  const f = e.target.dataset.f; if (!f) return;
+  const b = S.bets.find((x) => x.id === e.target.closest(".card").dataset.b);
+  if (f === "status") { b.status = e.target.value; b.settled = b.status === "open" ? null : new Date().toISOString(); }
+  else { const v = Number(e.target.value); if (!(v > (f === "odds" ? 1 : 0))) return toast("Enter a valid number"); b[f] = v; }
+  saveBets(); renderTracker();
+});
+$("#t-bets").addEventListener("click", (e) => {
+  if (!e.target.matches("[data-del]")) return;
+  const btn = e.target;
+  if (btn.dataset.armed) { S.bets = S.bets.filter((x) => x.id !== btn.closest(".card").dataset.b); saveBets(); renderTracker(); }
+  else { btn.dataset.armed = "1"; btn.textContent = "Tap again to delete"; setTimeout(() => { btn.textContent = "Delete"; delete btn.dataset.armed; }, 3000); }
+});
+
+// Track closing-line value: the latest fair price seen before kick-off.
+function updateClosing() {
+  const bySel = new Map(S.rows.map((r) => [r.sel_id, r.fair_prob]));
+  let changed = false;
+  for (const b of S.bets) for (const l of b.legs) {
+    const p = bySel.get(l.sel_id);
+    if (p != null && l.close !== p) { l.close = p; changed = true; }
+  }
+  if (changed) saveBets();
+}
+
+// ---------- settings ----------
+function fillSettings() {
+  $("#s-bank").value = S.prefs.bankroll; $("#s-edge").value = +(S.prefs.min_edge * 100).toFixed(2);
+  $("#s-kelly").value = S.prefs.kelly; $("#s-max").value = +(S.prefs.max_stake * 100).toFixed(2);
+  $("#s-sync").textContent = S.uid ? "Saved to your account; syncs across your devices." : "Sign in to claude.ai to save settings and bets.";
+}
+$("#set-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const bank = Number($("#s-bank").value), edge = Number($("#s-edge").value) / 100, k = Number($("#s-kelly").value), mx = Number($("#s-max").value) / 100;
+  if (!(bank > 0) || !(k > 0 && k <= 1) || !(mx > 0 && mx <= 1)) return toast("Check the numbers: bankroll above 0, Kelly and max stake between 0 and 1");
+  Object.assign(S.prefs, { bankroll: bank, min_edge: edge, kelly: k, max_stake: mx });
+  savePrefs(); renderBoard(); toast("Settings saved");
+});
+
+// ---------- persistence (artifact database) ----------
+let saving = Promise.resolve();
+function queue(fn) { saving = saving.then(fn).catch((e) => toast(`Couldn't save: ${e.message || e.code}`)); }
+function savePrefs() { if (S.db && S.uid) queue(() => S.db.doc(`data/users/${S.uid}/prefs`).set({ ...S.prefs, prices: S.prices })); }
+function saveBets() { if (S.db && S.uid) queue(() => S.db.doc(`data/users/${S.uid}/bets`).set({ items: S.bets })); }
+
+async function loadBoard(meta) {
+  const parts = await Promise.all(Array.from({ length: meta.chunks }, (_, i) => S.db.doc(`odds/chunk-${i}`).get()));
+  S.rows = parts.flatMap((p) => (p.exists ? p.data().rows || [] : []));
+  S.meta = meta;
+  updateClosing();
+  renderBoard();
+}
+function renderFresh() {
+  const m = S.meta;
+  $("#mode").hidden = !m;
+  if (m) { $("#mode").textContent = m.demo ? "Demo" : "Live"; $("#mode").className = `pill ${m.demo ? "demo" : "live"}`; }
+  $("#fresh").textContent = m ? `Prices ${ago(m.updated_at)}` : S.db === false ? "Offline" : "No prices yet";
+  const c = m && m.credits;
+  $("#pipeline").textContent = m ? `Last scan ${new Date(m.updated_at).toLocaleString()}: ${m.count} selections${c ? `, ${c.remaining} API credits left` : ""}${m.refresh && m.refresh.errors && m.refresh.errors.length ? `. Errors: ${m.refresh.errors.join("; ")}` : ""}.` : "";
+}
+
+// ---------- refresh (fires the scheduled Claude task) ----------
+$("#refresh").addEventListener("click", async () => {
+  if (!S.mcp || !S.triggerId) return toast("Refresh isn't available in this view. Prices update on the daily schedule.");
+  const btn = $("#refresh"); btn.disabled = true; btn.textContent = "Starting…";
+  try {
+    await S.mcp.callTool("Claude Code Remote", "fire_trigger", { trigger_id: S.triggerId });
+    toast("Odds scan started. New prices land here in about five minutes.", 6000);
+    btn.textContent = "Running…";
+    setTimeout(() => { btn.disabled = false; btn.textContent = "Refresh"; }, 5 * 60e3);
+    return;
+  } catch (e) {
+    const msg = {
+      not_in_manifest: "Refresh needs permission to run your Claude task. Allow it when asked, or in this page's Permissions menu.",
+      approval_required: "Refresh needs your approval to run the Claude task. Tap Refresh again and allow it.",
+      server_not_connected: "Refresh needs the Claude Code Remote connector. Open the page on claude.ai and try again.",
+      needs_reauth: "Reconnect Claude Code Remote in claude.ai Settings → Connectors.",
+      tool_error: "The scan task couldn't start. It may have been deleted; ask Claude to recreate it.",
+    }[e.code] || "Couldn't start the scan. Try again in a minute.";
+    toast(msg, 7000);
+  }
+  btn.disabled = false; btn.textContent = "Refresh";
+});
+
+// ---------- boot ----------
+renderBoard(); fillSettings();
+(async () => {
+  const [db, user, mcp] = await Promise.all(["db", "user", "mcp"].map((n) => window.claude?.use?.(n) ?? Promise.resolve(null)));
+  S.db = db || false; S.mcp = mcp;
+  if (!db) { renderFresh(); renderBoard(); return; }
+  S.uid = user ? await user.id() : null;
+  db.doc("config/app").get().then((d) => { if (d.exists) S.triggerId = d.data().trigger_id || null; }).catch(() => {});
+  if (S.uid) {
+    try {
+      const [p, b] = await Promise.all([db.doc(`data/users/${S.uid}/prefs`).get(), db.doc(`data/users/${S.uid}/bets`).get()]);
+      if (p.exists) { const d = p.data(); S.prices = { ...(d.prices || {}) }; Object.assign(S.prefs, Object.fromEntries(Object.entries(d).filter(([k]) => k in DEFAULT_PREFS))); }
+      if (b.exists) S.bets = JSON.parse(JSON.stringify(b.data().items || []));
+    } catch (_) { S.uid = null; }
+  }
+  fillSettings();
+  let lastStamp = null;
+  db.doc("odds/meta").onSnapshot((snap) => {
+    const m = snap.exists ? snap.data() : null;
+    if (!m) { S.meta = null; renderFresh(); renderBoard(); return; }
+    if (m.updated_at === lastStamp) return;
+    lastStamp = m.updated_at;
+    loadBoard(m).then(renderFresh).catch(() => toast("Couldn't load the price board"));
+  }, () => { renderFresh(); });
+  renderFresh();
+  setInterval(renderFresh, 60e3);
+})();
+</script>
