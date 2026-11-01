@@ -127,7 +127,7 @@ class ModelHub:
             matches = self._fd_matches(pool)
             if not matches:
                 return None
-            model = football.fit(matches, date.today())
+            model = football.fit_pool(matches, date.today(), football.POOLS[pool])
             self.football[pool] = (time.time(), model)
             self.errors.pop(f"football:{pool}", None)
             return model

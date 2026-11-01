@@ -63,6 +63,7 @@ class Match:
     away: str
     hg: int
     ag: int
+    div: str = ""
 
 
 def parse_fd_csv(text: str) -> list[Match]:
@@ -78,7 +79,7 @@ def parse_fd_csv(text: str) -> list[Match]:
         except (KeyError, ValueError, TypeError, AttributeError):
             continue
         if home and away:
-            out.append(Match(day, home, away, hg, ag))
+            out.append(Match(day, home, away, hg, ag, (row.get("Div") or "").strip()))
     return out
 
 
@@ -199,6 +200,79 @@ def fit(matches: list[Match], ref: date, xi: float = 0.0019, prior: float = 4.0,
         if ok and ll > best_ll:
             best_rho, best_ll = rho, ll
     return FootballModel(a, d, weight, c, h, best_rho, teams=teams)
+
+
+# Log goal-rate gap of each tier below the top division, used only when teams from
+# different divisions meet (cup ties). Within a division, its own fit is used.
+TIER_OFFSET = [0.0, -0.30, -0.50, -0.65, -0.80]
+
+
+@dataclass
+class PoolModel:
+    """One Dixon-Coles fit per division. Fitting a whole pyramid jointly leans on promoted and
+    relegated teams to set the gaps between divisions, which squashes them (promoted sides regress),
+    so each division is fitted on its own and cross-division ties use fixed tier offsets."""
+    divisions: dict[str, FootballModel]
+    team_div: dict[str, str]
+    order: list[str]
+
+    @property
+    def teams(self) -> list[str]:
+        return sorted(self.team_div)
+
+    @property
+    def h(self) -> float:
+        return self.divisions[self._top()].h
+
+    @property
+    def rho(self) -> float:
+        return self.divisions[self._top()].rho
+
+    def _top(self) -> str:
+        return next(d for d in self.order if d in self.divisions)
+
+    def _offset(self, div: str) -> float:
+        i = self.order.index(div)
+        return TIER_OFFSET[min(i, len(TIER_OFFSET) - 1)]
+
+    def lambdas(self, home: str, away: str, neutral: bool = False) -> tuple[float, float]:
+        dh, da = self.team_div[home], self.team_div[away]
+        mh, ma = self.divisions[dh], self.divisions[da]
+        if dh == da:
+            return mh.lambdas(home, away, neutral)
+        oh, oa = self._offset(dh), self._offset(da)
+        c = (mh.c + ma.c) / 2
+        hadv = 0.0 if neutral else mh.h
+        lh = math.exp(c + hadv + mh.attack[home] + oh + ma.defence[away] - oa)
+        la = math.exp(c + ma.attack[away] + oa + mh.defence[home] - oh)
+        return lh, la
+
+    def confidence(self, home: str, away: str) -> float:
+        n = min(self.divisions[self.team_div[home]].weight.get(home, 0.0),
+                self.divisions[self.team_div[away]].weight.get(away, 0.0))
+        return n / (n + 6.0)
+
+    def score_matrix(self, lh: float, la: float) -> list[list[float]]:
+        return score_matrix(lh, la, self.rho)
+
+    def strength(self, team: str) -> float:
+        d = self.team_div[team]
+        m = self.divisions[d]
+        return m.attack[team] - m.defence[team] + 2 * self._offset(d)
+
+
+def fit_pool(matches: list[Match], ref: date, order: list[str]) -> PoolModel:
+    by_div: dict[str, list[Match]] = {}
+    for m in matches:
+        by_div.setdefault(m.div, []).append(m)
+    divisions = {d: fit(ms, ref) for d, ms in by_div.items() if d in order and ms}
+    # A team belongs to the division of its most recent match.
+    latest: dict[str, tuple[date, str]] = {}
+    for m in sorted(matches, key=lambda m: m.day):
+        if m.div in divisions:
+            latest[m.home] = (m.day, m.div)
+            latest[m.away] = (m.day, m.div)
+    return PoolModel(divisions, {t: d for t, (_, d) in latest.items()}, order)
 
 
 # ---------- market probabilities from a score matrix ----------
