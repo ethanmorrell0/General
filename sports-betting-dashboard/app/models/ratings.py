@@ -12,17 +12,19 @@ from datetime import date
 
 from .. import maths
 
+# `xi` is decay per *game day* (a date with games), not per calendar day, so the off-season
+# doesn't erase last season: one season back keeps roughly a third of its weight.
 # Home advantage (points) is fixed at long-run market values: fitting it is distorted by
 # mismatches against teams that appear only once or twice (FCS visitors, exhibitions).
 SPORT_CFG = {
     "americanfootball_nfl": {"espn": "football/nfl", "groups": None, "margin_sd": 13.5, "total_sd": 10.5,
-                             "xi": 0.004, "ridge": 3.0, "hfa": 1.5},
+                             "xi": 0.02, "ridge": 3.0, "hfa": 1.5},
     "basketball_nba": {"espn": "basketball/nba", "groups": None, "margin_sd": 12.0, "total_sd": 18.0,
-                       "xi": 0.008, "ridge": 6.0, "hfa": 2.3},
+                       "xi": 0.006, "ridge": 6.0, "hfa": 2.3},
     "americanfootball_ncaaf": {"espn": "football/college-football", "groups": "80", "margin_sd": 15.5,
-                               "total_sd": 14.5, "xi": 0.004, "ridge": 2.5, "hfa": 2.8},
+                               "total_sd": 14.5, "xi": 0.008, "ridge": 2.5, "hfa": 2.8},
     "basketball_ncaab": {"espn": "basketball/mens-college-basketball", "groups": "50", "margin_sd": 10.5,
-                         "total_sd": 13.5, "xi": 0.008, "ridge": 5.0, "hfa": 3.2},
+                         "total_sd": 13.5, "xi": 0.003, "ridge": 5.0, "hfa": 3.2},
 }
 MIN_GAMES = 4  # drop exhibition sides (All-Star, Pro Bowl) and one-off minor opponents
 
@@ -88,7 +90,9 @@ def fit(games: list[Game], ref: date, sport_key: str, iters: int = 40) -> Rating
         counts[g.home] = counts.get(g.home, 0) + 1
         counts[g.away] = counts.get(g.away, 0) + 1
     games = [g for g in games if counts[g.home] >= MIN_GAMES and counts[g.away] >= MIN_GAMES]
-    gs = [(g, math.exp(-xi * max((ref - g.day).days, 0))) for g in games if g.day <= ref]
+    game_days = sorted({g.day for g in games if g.day <= ref})
+    age = {d: len(game_days) - 1 - i for i, d in enumerate(game_days)}
+    gs = [(g, math.exp(-xi * age[g.day])) for g in games if g.day <= ref]
     teams = sorted({g.home for g, _ in gs} | {g.away for g, _ in gs})
     off = {t: 0.0 for t in teams}
     dfn = {t: 0.0 for t in teams}

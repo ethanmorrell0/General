@@ -1,6 +1,7 @@
 """Turns raw odds into priced selections: fair probability, bet365 price, edge and stake."""
 from __future__ import annotations
 
+import math
 from datetime import datetime, timezone
 from statistics import median
 
@@ -129,6 +130,11 @@ def analyse_event(event: dict, hub: ModelHub, settings: dict, manual: dict[str, 
         sides = expected_sides(market, sk)
         if not sides:
             continue
+        # Drop books whose market has outcomes that don't belong (e.g. a 3-way regulation-time
+        # ice hockey market listed under the 2-way moneyline): their prices aren't comparable.
+        books = {b: px for b, px in books.items() if set(px) <= set(sides)}
+        if not books:
+            continue
         sharp: list[tuple[float, dict[str, float]]] = []
         allp: list[dict[str, float]] = []
         for book, prices in books.items():
@@ -144,7 +150,7 @@ def analyse_event(event: dict, hub: ModelHub, settings: dict, manual: dict[str, 
             market_p = {s: sum(w * p[s] for w, p in sharp) / tw for s in sides}
             source = "sharp"
             w_model = settings["model_weight_sharp"]
-        elif len(allp) >= 2:
+        elif allp:
             market_p = {s: sum(p[s] for p in allp) / len(allp) for s in sides}
             source = "consensus"
             w_model = settings["model_weight_soft"]
@@ -167,15 +173,15 @@ def analyse_event(event: dict, hub: ModelHub, settings: dict, manual: dict[str, 
                 tot = sum(vals.values())
                 model_p = {s: v / tot for s, v in vals.items()}
 
-        if market_p is None and model_p is None:
-            continue
         if market_p is None:
-            fair = model_p
+            # Prices exist but no book priced the whole market, so there is nothing to check
+            # the model against. Skip rather than trust the model alone.
+            continue
         elif model_p is None:
             fair = market_p
-            w_model = 0.0
+            w_used = 0.0
         else:
-            w = w_model * conf
+            w = w_used = w_model * conf * agreement(market_p, model_p)
             fair = {s: (1 - w) * market_p[s] + w * model_p[s] for s in sides}
             tot = sum(fair.values())
             fair = {s: v / tot for s, v in fair.items()}
@@ -197,7 +203,7 @@ def analyse_event(event: dict, hub: ModelHub, settings: dict, manual: dict[str, 
                 "description": desc, "label": selection_label(market, s, pt, event, desc),
                 "fair_prob": fair[s], "market_prob": market_p[s] if market_p else None,
                 "model_prob": model_p[s] if model_p else None, "source": source,
-                "model_weight": round(w_model * conf, 3) if market_p and model_p else (1.0 if not market_p else 0.0),
+                "model_weight": round(w_used, 3),
                 "confidence": round(conf, 2),
                 "bet365_price": b365, "manual_price": manual.get(sid),
                 "best_price": soft[0][0] if soft else None, "best_book": soft[0][1] if soft else None,
@@ -244,6 +250,18 @@ def analyse_event(event: dict, hub: ModelHub, settings: dict, manual: dict[str, 
     for sel in out:
         finalise(sel, settings)
     return out
+
+
+def agreement(market_p: dict[str, float], model_p: dict[str, float]) -> float:
+    """Down-weight the model when it contradicts the market badly. A big gap in log-odds
+    almost always means the model is wrong (stale ratings, a mismatched team), not the market."""
+    gap = max(abs(_logit(market_p[s]) - _logit(model_p[s])) for s in market_p)
+    return math.exp(-(gap / 0.8) ** 2)
+
+
+def _logit(p: float) -> float:
+    p = min(max(p, 1e-4), 1 - 1e-4)
+    return math.log(p / (1 - p))
 
 
 def finalise(sel: dict, settings: dict) -> dict:

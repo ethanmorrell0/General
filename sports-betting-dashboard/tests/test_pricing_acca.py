@@ -98,3 +98,26 @@ def test_budget_blocks_overspend():
     assert not ok and "reserve" in reason
     db.log_usage("odds", "soccer_epl", 1, 400, 100)
     assert budget.can_spend(10, SETTINGS)[0]
+
+
+def test_model_ignored_when_it_contradicts_market():
+    # Market says 1.5%, model says 33%: trust the market, not the model.
+    assert pricing.agreement({"home": 0.985, "away": 0.015}, {"home": 0.67, "away": 0.33}) < 0.01
+    # Small disagreements keep most of the model's weight.
+    assert pricing.agreement({"home": 0.55, "away": 0.45}, {"home": 0.58, "away": 0.42}) > 0.95
+
+
+def test_single_book_counts_as_market():
+    ev = _event()
+    ev["bookmakers"] = [b for b in ev["bookmakers"] if b["key"] == "williamhill"]
+    sels = pricing.analyse_event(ev, ModelHub(demo=False), SETTINGS, {})
+    assert {s["source"] for s in sels} == {"consensus"}
+
+
+def test_three_way_book_excluded_from_two_way_market():
+    ev = _event(sport="icehockey_nhl")
+    ev["bookmakers"].append({"key": "betsson", "title": "betsson", "markets": [{"key": "h2h", "outcomes": [
+        {"name": "Home", "price": 2.6}, {"name": "Away", "price": 2.9}, {"name": "Draw", "price": 4.2}]}]})
+    sels = pricing.analyse_event(ev, ModelHub(demo=False), SETTINGS, {})
+    home = next(s for s in sels if s["side"] == "home")
+    assert home["best_book"] != "betsson" and home["best_price"] < 2.0
