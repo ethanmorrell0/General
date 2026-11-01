@@ -189,7 +189,7 @@
 
   <section class="af-section" id="backtest">
     <h2 class="af-section-h">Backtest: the same rules run on past prices</h2>
-    <p class="af-sub">The stock list is today’s list of quality companies, so the “with stocks” history has hindsight built in. The ETFs-only line is the fairer test.</p>
+    <p class="af-sub">Three versions, 2016 to today, after trading costs. The fair test picks stocks from the 30 largest companies at the end of 2015, including later laggards like GE, Intel and HSBC. Today’s stock list has hindsight built in, so treat that line as an upper bound.</p>
     <div class="af-grid">
       <div class="af-card">
         <h3>Growth of 100</h3>
@@ -411,7 +411,7 @@
     if (!rows || rows.length < 2) return;
     const data = rows.map((r) => ({ ...r, d: new Date(String(r.date).slice(0, 10) + 'T00:00:00Z') }));
     const W = Math.max(280, el.clientWidth), H = 260;
-    const colors = series.map((s, i) => (i === 0 ? dash.colors[0] : i === series.length - 1 ? 'var(--cds-chart-muted)' : dash.colors[1]));
+    const colors = series.map((s, i) => (i === series.length - 1 ? 'var(--cds-chart-muted)' : dash.colors[i]));
     const vals = data.flatMap((r) => series.map((s) => C.num(r[s.key])).filter((v) => v !== null));
     const y = d3.scaleLinear(d3.extent(vals), [H - 28, 10]).nice();
     const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
@@ -474,5 +474,5 @@
 
   dash.draw('nav-chart', (el) => lineChart(el, C.ok('nav'), [{ key: 'fund', label: 'Fund' }, { key: 'bench', label: 'All-World' }]));
   dash.draw('bt-chart', (el) => lineChart(el, C.ok('bt_curve'), [
-    { key: 'fund', label: 'With stocks' }, { key: 'fund_etf', label: 'ETFs only' }, { key: 'bench', label: 'All-World' }]));
+    { key: 'fund_pit', label: 'Fair test' }, { key: 'fund', label: 'Hindsight' }, { key: 'fund_etf', label: 'ETFs only' }, { key: 'bench', label: 'All-World' }]));
 </script>

@@ -2,9 +2,8 @@
 
     python -m fund.backtest            # writes fund/state/backtest.json
 
-Caveat: the stock list is today's list of quality large caps, so the stock
-sleeve's history benefits from hindsight (survivorship bias). The ETF-only
-variant has no such bias and is the fairer test of the method.
+Three variants: today's stock list (has hindsight: survivorship bias), the
+largest companies at end-2015 (the fair test of the stock sleeve), and ETFs only.
 """
 from __future__ import annotations
 
@@ -97,24 +96,27 @@ def metrics(sim: dict) -> dict:
 
 
 def run(px: pd.DataFrame, start: str = "2016-01-01") -> dict:
-    full = metrics(simulate(px, start))
     saved = C.STOCKS
     try:
+        C.STOCKS = [x for x in saved if x["id"] in px]
+        full = metrics(simulate(px.drop(columns=[c for c in px if c.startswith("PIT_")]), start))
+        C.STOCKS = [x for x in C.BACKTEST_STOCKS_2015 if x["id"] in px]
+        pit = metrics(simulate(px.drop(columns=[x["id"] for x in saved if x["id"] in px]), start))
         C.STOCKS = []
         etf_only = metrics(simulate(px, start))
     finally:
         C.STOCKS = saved
-    return {"full": full, "etf_only": etf_only}
+    return {"full": full, "pit": pit, "etf_only": etf_only}
 
 
 if __name__ == "__main__":
     from .data import download
 
-    px, meta = download("2014-01-01")
+    px, meta = download("2014-01-01", extra=C.BACKTEST_STOCKS_2015)
     out = run(px)
     out["meta"] = meta
     OUT.write_text(json.dumps(out, indent=1, default=float))
-    for k in ("full", "etf_only"):
+    for k in ("full", "pit", "etf_only"):
         m = out[k]
         print(f"{k:9s} {m['start']}→{m['end']}  fund {m['fund_cagr']:.2%}  bench {m['bench_cagr']:.2%}  "
               f"excess {m['excess_cagr']:+.2%}  TE {m['tracking_error']:.2%}  maxDD {m['fund_maxdd']:.1%} "

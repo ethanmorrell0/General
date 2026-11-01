@@ -88,13 +88,13 @@ def build() -> dict[str, list[dict]]:
         {"sleeve": "Stocks", "weight": sum(w["stocks"]), "holds": f"{len(C.STOCKS)} quality large caps",
          "rule": "Top 3 by risk-adjusted momentum and in an uptrend, 5% each. Kept until they fall out of the top 8."},
         {"sleeve": "Defensive", "weight": C.DEFENSIVE_LEVELS[2], "holds": "Physical gold (SGLN) and cash",
-         "rule": "0%, 7% or 15% depending on 0, 1 or 2 warning signs on the All-World index."},
+         "rule": "15% out of equities when both warning signs are on: All-World below its 200-day average and down over 3 months."},
     ]
 
     bt = _load_backtest()
     bt_metrics, bt_curve = [], []
     if bt:
-        labels = {"full": "With stocks", "etf_only": "ETFs only"}
+        labels = {"pit": "Fair test (2015 stock list)", "full": "Today's stock list (hindsight)", "etf_only": "ETFs only"}
         for v, lab in labels.items():
             m = bt[v]
             for key, name in (("fund_cagr", "Fund return a year"), ("bench_cagr", "All-World return a year"),
@@ -104,8 +104,9 @@ def build() -> dict[str, list[dict]]:
                 bt_metrics.append({"key": f"{v}:{key}", "variant": lab, "metric": name, "value": m[key],
                                    "start": m["start"], "end": m["end"]})
         etf = {p["date"]: p["fund"] for p in bt["etf_only"]["curve"]}
-        bt_curve = [{"date": p["date"], "fund": p["fund"], "fund_etf": etf.get(p["date"]), "bench": p["bench"]}
-                    for p in bt["full"]["curve"]]
+        full = {p["date"]: p["fund"] for p in bt["full"]["curve"]}
+        bt_curve = [{"date": p["date"], "fund_pit": p["fund"], "fund": full.get(p["date"]),
+                     "fund_etf": etf.get(p["date"]), "bench": p["bench"]} for p in bt["pit"]["curve"]]
 
     return {"summary": summary, "holdings": holdings, "signals": signals, "log": log_rows,
             "nav": nav_rows, "mandate": mandate, "bt_metrics": bt_metrics, "bt_curve": bt_curve}

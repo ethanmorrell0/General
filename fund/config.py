@@ -15,7 +15,7 @@ FACTORS = [
     {"id": "IWFM", "name": "iShares MSCI World Momentum Factor", "style": "Momentum", "tickers": ["IWFM.L", "IWMO.L"]},
     {"id": "IWFQ", "name": "iShares MSCI World Quality Factor", "style": "Quality", "tickers": ["IWFQ.L", "IWQU.L"]},
     {"id": "IWFV", "name": "iShares MSCI World Value Factor", "style": "Value", "tickers": ["IWFV.L", "IWVL.L"]},
-    {"id": "WLDS", "name": "iShares MSCI World Small Cap", "style": "Small-cap", "tickers": ["WLDS.L", "WSML.L", "IWFS.L"]},
+    {"id": "IWFS", "name": "iShares MSCI World Size Factor", "style": "Small-cap", "tickers": ["IWFS.L", "IWSZ.L"]},
 ]
 
 # Regional tilts. The strongest trending regions get an overweight.
@@ -70,7 +70,7 @@ DEFENSIVE = {
     "cash": {"id": "CASH", "name": "Cash (uninvested, earns T212 interest)"},
 }
 
-FX = {"USD": ["GBPUSD=X"], "EUR": ["GBPEUR=X"]}
+FX = {"USD": ["GBPUSD=X"], "EUR": ["GBPEUR=X"], "CHF": ["GBPCHF=X"], "JPY": ["GBPJPY=X"]}
 
 # Target weights in whole percent, so they can be typed straight into a T212 pie.
 WEIGHTS = {
@@ -81,7 +81,10 @@ WEIGHTS = {
 }
 
 # Defensive overlay on the All-World index (in GBP).
-DEFENSIVE_LEVELS = {0: 0, 1: 7, 2: 15}   # number of warning signs -> % out of equities
+# Number of warning signs -> % out of equities. One sign alone is usually a
+# false alarm (in the 2016-2026 backtest it cost about 0.15%/yr), so only
+# both together move money out.
+DEFENSIVE_LEVELS = {0: 0, 1: 0, 2: 15}
 GOLD_SHARE_WHEN_TRENDING = 2 / 3         # rest of the defensive slice goes to cash
 
 # Hysteresis: a holding stays until it drops below these ranks, so the fund
@@ -107,3 +110,20 @@ COSTS = {"etf": 0.0010, "usd_eur_stock": 0.0025, "uk_stock": 0.0060}
 
 LOOKBACK = {"mom_long": 252, "skip": 21, "mom_short": 126, "vol": 63, "sma": 200, "regime_ret": 63}
 SMOOTH_LAGS = [0, 5, 10, 15, 20]  # scores are averaged over these day-lags to cut noise
+
+# Backtest only: roughly the 30 largest listed companies at the end of 2015,
+# including later laggards (GE, Exxon, Intel, HSBC...). Picking from this list
+# avoids the hindsight in today's STOCKS list. Delisted names are left out.
+BACKTEST_STOCKS_2015 = [
+    {"id": f"PIT_{t}", "name": n, "tickers": [t], "ccy": c} for t, n, c in [
+        ("AAPL", "Apple", "USD"), ("GOOGL", "Alphabet", "USD"), ("MSFT", "Microsoft", "USD"),
+        ("BRK-B", "Berkshire Hathaway", "USD"), ("XOM", "Exxon Mobil", "USD"), ("AMZN", "Amazon", "USD"),
+        ("META", "Meta", "USD"), ("JNJ", "Johnson & Johnson", "USD"), ("GE", "General Electric", "USD"),
+        ("WFC", "Wells Fargo", "USD"), ("JPM", "JPMorgan", "USD"), ("PG", "Procter & Gamble", "USD"),
+        ("WMT", "Walmart", "USD"), ("VZ", "Verizon", "USD"), ("T", "AT&T", "USD"), ("PFE", "Pfizer", "USD"),
+        ("KO", "Coca-Cola", "USD"), ("CVX", "Chevron", "USD"), ("INTC", "Intel", "USD"), ("ORCL", "Oracle", "USD"),
+        ("BABA", "Alibaba", "USD"), ("TSM", "TSMC", "USD"), ("NESN.SW", "Nestle", "CHF"), ("NOVN.SW", "Novartis", "CHF"),
+        ("7203.T", "Toyota", "JPY"), ("HSBA.L", "HSBC", "GBp"), ("BP.L", "BP", "GBp"), ("SHEL.L", "Shell", "GBp"),
+        ("MC.PA", "LVMH", "EUR"),
+    ]
+]

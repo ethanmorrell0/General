@@ -40,7 +40,7 @@ def test_crash_triggers_defensive_overlay():
     px.iloc[-80:] = px.iloc[-80:] * np.linspace(1, 0.7, 80)[:, None]
     res = M.allocate(px)
     assert res["regime"]["level"] == 2
-    assert res["target"].get("CASH", 0) + res["target"].get("SGLN", 0) == 15
+    assert res["target"].get("CASH", 0) + res["target"].get("SGLN", 0) == C.DEFENSIVE_LEVELS[2]
 
 
 def test_hold_when_nothing_changed():

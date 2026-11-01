@@ -12,8 +12,8 @@ class DataUnavailable(RuntimeError):
     pass
 
 
-def _instruments():
-    items = [C.CORE] + C.FACTORS + C.REGIONS + C.STOCKS + [C.DEFENSIVE["gold"]]
+def _instruments(extra=()):
+    items = [C.CORE] + C.FACTORS + C.REGIONS + C.STOCKS + [C.DEFENSIVE["gold"]] + list(extra)
     seen, out = set(), []
     for it in items:
         if it["id"] not in seen:
@@ -35,10 +35,10 @@ def fix_pence(s: pd.Series) -> pd.Series:
     return s
 
 
-def download(start: str = "2014-01-01") -> tuple[pd.DataFrame, dict]:
+def download(start: str = "2014-01-01", extra=()) -> tuple[pd.DataFrame, dict]:
     import yfinance as yf
 
-    insts = _instruments()
+    insts = _instruments(extra)
     all_tickers = sorted({t for it in insts for t in it["tickers"]} | {t for v in C.FX.values() for t in v})
     raw = yf.download(all_tickers, start=start, auto_adjust=True, progress=False, threads=True)
     if raw is None or raw.empty:
@@ -60,11 +60,13 @@ def download(start: str = "2014-01-01") -> tuple[pd.DataFrame, dict]:
                 fx[ccy] = s
                 break
 
+    # Trading calendar: the longest history among the core's tickers
+    # (VWRL goes back to 2012; VWRP only to 2019).
     core_s = None
     for t in C.CORE["tickers"]:
-        core_s = series(t)
-        if core_s is not None:
-            break
+        s_ = series(t)
+        if s_ is not None and (core_s is None or len(s_) > len(core_s)):
+            core_s = s_
     if core_s is None:
         raise DataUnavailable("No price history for the All-World core holding")
     cal = core_s.index  # London trading days

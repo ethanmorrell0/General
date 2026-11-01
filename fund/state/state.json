@@ -1,0 +1,369 @@
+{
+ "inception": "2026-10-30",
+ "units": {
+  "VWRP": 33.05742334551964,
+  "IWFV": 0.20501710571330822,
+  "IWFM": 0.09882745825602969,
+  "IWFQ": 0.07435787671232877,
+  "VUAG": 7.433089721237353,
+  "VJPN": 18.611540677733572,
+  "AAPL": 0.019386374633796458,
+  "LLY": 0.004713183543742379,
+  "TSM": 0.0164507086508743
+ },
+ "target": {
+  "VWRP": 45,
+  "IWFV": 12,
+  "IWFM": 8,
+  "IWFQ": 5,
+  "VUAG": 8,
+  "VJPN": 7,
+  "AAPL": 5,
+  "LLY": 5,
+  "TSM": 5
+ },
+ "level": 0,
+ "last_rebalance": "2026-10-30",
+ "last_data_date": "2026-10-30",
+ "nav": [
+  {
+   "date": "2026-10-30",
+   "fund": 99.8775,
+   "bench": 100.0
+  }
+ ],
+ "log": [
+  {
+   "run_date": "2026-11-01",
+   "data_date": "2026-10-30",
+   "action": "REBALANCE",
+   "reasons": [
+    "First allocation: build the portfolio from cash"
+   ],
+   "trades": {
+    "VUAG": 8,
+    "IWFQ": 5,
+    "AAPL": 5,
+    "VWRP": 45,
+    "IWFM": 8,
+    "TSM": 5,
+    "VJPN": 7,
+    "LLY": 5,
+    "IWFV": 12
+   },
+   "note": "Day one: build the portfolio from cash using the targets below. The market backdrop is calm: the All-World index is 4.1% above its 200-day average and up 2.0% over three months, so there are no warning signs and the fund is fully in equities. Value is the strongest style against the index by a wide margin, so it gets the biggest tilt (12%), followed by Momentum and Quality. The US and Japan lead the regions. Apple, Eli Lilly and TSMC are the top stocks in an uptrend. ASML ranks third on momentum but sits just below its 200-day average, so it waits. Watch Momentum and the Asia Pacific region, which are both hovering around their trend lines.",
+   "regime_level": 0
+  }
+ ],
+ "bench_start": 1.3596000671386719,
+ "current": {
+  "VWRP": 45.0,
+  "IWFV": 12.0,
+  "IWFM": 8.0,
+  "IWFQ": 5.0,
+  "VUAG": 8.0,
+  "VJPN": 7.0,
+  "AAPL": 5.0,
+  "LLY": 5.0,
+  "TSM": 5.0
+ },
+ "signals": {
+  "regime": {
+   "level": 0,
+   "warnings": [],
+   "sma_gap": 0.0410836235195291,
+   "ret_3m": 0.020218499552671743,
+   "defensive_pct": 0,
+   "gold_trending": false,
+   "gold_trend": -0.1303845487281199
+  },
+  "factors": [
+   {
+    "id": "IWFV",
+    "name": "iShares MSCI World Value Factor",
+    "style": "Value",
+    "rank": 1,
+    "mom": 0.1801,
+    "trend": 0.0574,
+    "ret_12m": 0.3602
+   },
+   {
+    "id": "IWFM",
+    "name": "iShares MSCI World Momentum Factor",
+    "style": "Momentum",
+    "rank": 2,
+    "mom": 0.0294,
+    "trend": -0.0154,
+    "ret_12m": 0.1026
+   },
+   {
+    "id": "IWFQ",
+    "name": "iShares MSCI World Quality Factor",
+    "style": "Quality",
+    "rank": 3,
+    "mom": -0.0021,
+    "trend": 0.0495,
+    "ret_12m": 0.124
+   },
+   {
+    "id": "IWFS",
+    "name": "iShares MSCI World Size Factor",
+    "style": "Small-cap",
+    "rank": 4,
+    "mom": -0.0407,
+    "trend": 0.0267,
+    "ret_12m": 0.0957
+   }
+  ],
+  "regions": [
+   {
+    "id": "VUAG",
+    "name": "Vanguard S&P 500 (Acc)",
+    "region": "US",
+    "rank": 1,
+    "score": 1.3565,
+    "mom": 0.134,
+    "trend": 0.0443,
+    "ret_12m": 0.0968,
+    "eligible": true
+   },
+   {
+    "id": "VJPN",
+    "name": "Vanguard FTSE Japan",
+    "region": "Japan",
+    "rank": 2,
+    "score": 1.0325,
+    "mom": 0.1682,
+    "trend": 0.0114,
+    "ret_12m": 0.1374,
+    "eligible": true
+   },
+   {
+    "id": "VUKG",
+    "name": "Vanguard FTSE 100 (Acc)",
+    "region": "UK",
+    "rank": 3,
+    "score": 1.0235,
+    "mom": 0.0939,
+    "trend": 0.0303,
+    "ret_12m": 0.1308,
+    "eligible": true
+   },
+   {
+    "id": "VAPX",
+    "name": "Vanguard FTSE Dev. Asia Pacific ex Japan",
+    "region": "Asia Pacific ex Japan",
+    "rank": 4,
+    "score": 1.0208,
+    "mom": 0.2965,
+    "trend": -0.0156,
+    "ret_12m": 0.3124,
+    "eligible": false
+   },
+   {
+    "id": "VERG",
+    "name": "Vanguard FTSE Dev. Europe ex UK (Acc)",
+    "region": "Europe ex UK",
+    "rank": 5,
+    "score": 0.7178,
+    "mom": 0.078,
+    "trend": 0.0001,
+    "ret_12m": 0.0843,
+    "eligible": true
+   },
+   {
+    "id": "VFEG",
+    "name": "Vanguard FTSE Emerging Markets (Acc)",
+    "region": "Emerging markets",
+    "rank": 6,
+    "score": 0.5428,
+    "mom": 0.0726,
+    "trend": -0.0414,
+    "ret_12m": 0.0071,
+    "eligible": false
+   }
+  ],
+  "stocks": [
+   {
+    "id": "AAPL",
+    "name": "Apple",
+    "rank": 1,
+    "score": 1.4527,
+    "mom": 0.2881,
+    "vol": 0.1983,
+    "trend": 0.166,
+    "ret_12m": 0.2571,
+    "eligible": true
+   },
+   {
+    "id": "LLY",
+    "name": "Eli Lilly",
+    "rank": 2,
+    "score": 1.2189,
+    "mom": 0.3824,
+    "vol": 0.3137,
+    "trend": 0.3033,
+    "ret_12m": 0.666,
+    "eligible": true
+   },
+   {
+    "id": "ASML",
+    "name": "ASML",
+    "rank": 3,
+    "score": 1.1819,
+    "mom": 0.4421,
+    "vol": 0.3741,
+    "trend": -0.0087,
+    "ret_12m": 0.4409,
+    "eligible": false
+   },
+   {
+    "id": "TSM",
+    "name": "Taiwan Semiconductor (ADR)",
+    "rank": 4,
+    "score": 1.0082,
+    "mom": 0.3296,
+    "vol": 0.327,
+    "trend": 0.0198,
+    "ret_12m": 0.335,
+    "eligible": true
+   },
+   {
+    "id": "V",
+    "name": "Visa",
+    "rank": 5,
+    "score": 0.9073,
+    "mom": 0.1766,
+    "vol": 0.1947,
+    "trend": 0.2148,
+    "ret_12m": 0.1917,
+    "eligible": true
+   },
+   {
+    "id": "JPM",
+    "name": "JPMorgan Chase",
+    "rank": 6,
+    "score": 0.7478,
+    "mom": 0.1298,
+    "vol": 0.1736,
+    "trend": 0.055,
+    "ret_12m": 0.095,
+    "eligible": true
+   },
+   {
+    "id": "UNH",
+    "name": "UnitedHealth",
+    "rank": 7,
+    "score": 0.7376,
+    "mom": 0.1683,
+    "vol": 0.2281,
+    "trend": 0.1327,
+    "ret_12m": 0.1953,
+    "eligible": true
+   },
+   {
+    "id": "MSFT",
+    "name": "Microsoft",
+    "rank": 8,
+    "score": 0.6547,
+    "mom": 0.1495,
+    "vol": 0.2283,
+    "trend": 0.1997,
+    "ret_12m": -0.0129,
+    "eligible": true
+   },
+   {
+    "id": "RR",
+    "name": "Rolls-Royce",
+    "rank": 9,
+    "score": 0.5659,
+    "mom": 0.1901,
+    "vol": 0.3359,
+    "trend": -0.0722,
+    "ret_12m": 0.0612,
+    "eligible": false
+   },
+   {
+    "id": "BRK-B",
+    "name": "Berkshire Hathaway B",
+    "rank": 10,
+    "score": 0.5503,
+    "mom": 0.0748,
+    "vol": 0.1359,
+    "trend": 0.0978,
+    "ret_12m": 0.1182,
+    "eligible": true
+   },
+   {
+    "id": "MA",
+    "name": "Mastercard",
+    "rank": 11,
+    "score": 0.5421,
+    "mom": 0.1079,
+    "vol": 0.1991,
+    "trend": 0.1988,
+    "ret_12m": 0.1438,
+    "eligible": true
+   },
+   {
+    "id": "NVDA",
+    "name": "Nvidia",
+    "rank": 12,
+    "score": 0.4566,
+    "mom": 0.1657,
+    "vol": 0.3628,
+    "trend": 0.0054,
+    "ret_12m": -0.0028,
+    "eligible": true
+   }
+  ]
+ },
+ "meta": {
+  "tickers_used": {
+   "VWRP": "VWRL.L",
+   "IWFM": "IWFM.L",
+   "IWFQ": "IWFQ.L",
+   "IWFV": "IWFV.L",
+   "VUAG": "VUSA.L",
+   "VERG": "VERX.L",
+   "VUKG": "VUKE.L",
+   "VJPN": "VJPN.L",
+   "VFEG": "VFEM.L",
+   "VAPX": "VAPX.L",
+   "MSFT": "MSFT",
+   "AAPL": "AAPL",
+   "NVDA": "NVDA",
+   "GOOGL": "GOOGL",
+   "AMZN": "AMZN",
+   "META": "META",
+   "AVGO": "AVGO",
+   "TSM": "TSM",
+   "V": "V",
+   "MA": "MA",
+   "LLY": "LLY",
+   "COST": "COST",
+   "JPM": "JPM",
+   "BRK-B": "BRK-B",
+   "UNH": "UNH",
+   "ISRG": "ISRG",
+   "SPGI": "SPGI",
+   "NFLX": "NFLX",
+   "ASML": "ASML.AS",
+   "SAP": "SAP.DE",
+   "MC": "MC.PA",
+   "RMS": "RMS.PA",
+   "SU": "SU.PA",
+   "NOVO": "NVO",
+   "AZN": "AZN.L",
+   "RELX": "REL.L",
+   "LSEG": "LSEG.L",
+   "ULVR": "ULVR.L",
+   "RR": "RR.L",
+   "BA": "BA.L",
+   "SGLN": "SGLN.L",
+   "IWFS": "IWFS.L"
+  },
+  "missing": [],
+  "last_date": "2026-10-30"
+ }
+}
