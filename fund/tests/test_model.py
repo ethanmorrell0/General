@@ -10,7 +10,7 @@ from fund import config as C
 from fund import model as M
 from fund import run as R
 
-IDS = [C.CORE["id"]] + [x["id"] for x in C.FACTORS + C.REGIONS + C.STOCKS] + [C.DEFENSIVE["gold"]["id"]]
+IDS = [C.CORE["id"]] + [x["id"] for x in C.FACTORS + C.REGIONS + C.STOCKS + C.B_STOCKS] + [C.DEFENSIVE["gold"]["id"]]
 
 
 def fake_prices(days=900, seed=1, drift=0.0003):
@@ -81,20 +81,47 @@ def test_backtest_runs_and_charges_costs():
     assert m["turnover_per_year"] < 10
 
 
+def test_pie_b_allocation_respects_caps():
+    from fund import model_b as MB
+    res = MB.allocate_b(fake_prices())
+    t = res["target"]
+    assert sum(t.values()) == 100
+    stocks = {k: v for k, v in t.items() if k != "CASH"}
+    assert len(stocks) <= C.B["n"]
+    assert all(C.B["min_w"] - 1 <= v <= C.B["max_w"] + 1 for v in stocks.values())
+    sectors = {}
+    for s in C.B_STOCKS:
+        if s["id"] in stocks:
+            sectors[s["sector"]] = sectors.get(s["sector"], 0) + stocks[s["id"]]
+    assert max(sectors.values()) <= C.B["sector_cap"] + 15
+
+
+def test_pie_b_goes_to_cash_in_a_crash():
+    from fund import model_b as MB
+    px = fake_prices()
+    px.iloc[-120:] = px.iloc[-120:] * np.linspace(1, 0.5, 120)[:, None]
+    assert MB.allocate_b(px)["target"].get("CASH", 0) >= 50
+
+
 def test_daily_run_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(R, "STATE", tmp_path / "state.json")
     monkeypatch.setattr(R, "DATA", tmp_path / "data.json")
     px = fake_prices()
     import fund.data as D
-    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-5], {"last_date": "x"}))
+    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-30], {"last_date": "x"}))
     e1 = R.daily("2023-06-01")
     assert e1["action"] == "REBALANCE"
-    e2 = R.daily("2023-06-02")
-    assert e2["action"] == "NO_NEW_DATA"
-    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px, {"last_date": "y"}))
-    e3 = R.daily("2023-06-03")
-    assert e3["action"] in {"HOLD", "REBALANCE"}
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert abs(st["nav"][-1]["A_val"] / (st["nav"][-1]["A_val"] + st["nav"][-1]["B_val"]) - 0.5) < 0.01
+    assert R.daily("2023-06-02")["action"] == "NO_NEW_DATA"
+    for i, n in enumerate(range(29, -1, -1)):
+        monkeypatch.setattr(D, "download", lambda start="2014-01-01", n=n: (px.iloc[:len(px) - n], {"last_date": "y"}))
+        e = R.daily(f"2023-07-{i + 1:02d}")
+        assert e["action"] in {"HOLD", "REBALANCE"}
     R.annotate("Test note")
-    data = json.loads((tmp_path / "data.json").read_text())
-    assert data["latest"]["note"] == "Test note"
-    assert sum(h["target"] for h in data["holdings"]) == 100
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert st["log"][-1]["note"] == "Test note"
+    for p in ("A", "B"):
+        assert sum(st["pies"][p]["target"].values()) == 100
+    share = st["nav"][-1]["A_val"] / (st["nav"][-1]["A_val"] + st["nav"][-1]["B_val"])
+    assert abs(share - 0.5) < 0.06

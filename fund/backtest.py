@@ -2,8 +2,10 @@
 
     python -m fund.backtest            # writes fund/state/backtest.json
 
-Three variants: today's stock list (has hindsight: survivorship bias), the
-largest companies at end-2015 (the fair test of the stock sleeve), and ETFs only.
+Pie A: today's stock list (hindsight: survivorship bias), the largest
+companies at end-2015 (the fair test of its stock sleeve), and ETFs only.
+Pie B: on its own universe (chosen today, so optimistic) and on the 2015
+large-cap list. Total: pie A + pie B at 50/50.
 """
 from __future__ import annotations
 
@@ -19,18 +21,21 @@ from . import model as M
 
 OUT = Path(__file__).parent / "state" / "backtest.json"
 WINDOW = M.MIN_HISTORY + 30
+WINDOW_B = 520  # pie B's takeover check needs ~2 years of prices
 
 
-def simulate(px: pd.DataFrame, start: str = "2016-01-01") -> dict:
+def simulate(px: pd.DataFrame, start: str = "2016-01-01", alloc=None, trigger=None, min_days=None, window=WINDOW) -> dict:
+    """alloc(window, prev_target, prev_level) -> result dict; defaults to pie A."""
+    alloc = alloc or (lambda w, prev, lvl: M.allocate(w, prev=prev, prev_level=lvl))
     idx = px.index
-    i0 = max(int(np.searchsorted(idx, pd.Timestamp(start))), WINDOW)
+    i0 = max(int(np.searchsorted(idx, pd.Timestamp(start))), window)
     units, target, level = {}, {}, None
     nav, bench0 = 100.0, None
     rows, rebal_dates, turnover = [], [], 0.0
     last_i = None
     for i in range(i0, len(idx)):
         days_since = None if last_i is None else i - last_i
-        win = px.iloc[i - WINDOW + 1:i + 1]
+        win = px.iloc[i - window + 1:i + 1]
         last = win.iloc[-1]
         prices = {k: float(last[k]) for k in win.columns if not math.isnan(last[k])}
         if C.CORE["id"] not in prices:
@@ -45,9 +50,9 @@ def simulate(px: pd.DataFrame, start: str = "2016-01-01") -> dict:
             current, nav = M.drifted_weights(units, prices)
         else:
             current = {}
-        res = M.allocate(win, prev=target, prev_level=level)
+        res = alloc(win, target, level)
         lvl = res["regime"]["level"]
-        go, _ = M.decide(res["target"], current, target, level, lvl, days_since)
+        go, _ = M.decide(res["target"], current, target, level, lvl, days_since, trigger, min_days)
         if go:
             tgt = res["target"]
             trades = {k: tgt.get(k, 0) - current.get(k, 0) for k in set(tgt) | set(current)}
@@ -95,28 +100,67 @@ def metrics(sim: dict) -> dict:
     }
 
 
+def combine(a: pd.DataFrame, b: pd.DataFrame, split=None, drift=None) -> dict:
+    """Two pies at 50/50, moved back to 50/50 when one drifts past the band."""
+    split = split or C.SPLIT
+    drift = drift if drift is not None else C.SPLIT_DRIFT_PP
+    df = pd.concat([a["fund"].rename("a"), b["fund"].rename("b"), a["bench"]], axis=1).dropna()
+    ra, rb = df["a"].pct_change().fillna(0), df["b"].pct_change().fillna(0)
+    va, vb = split["A"], split["B"]
+    out, moves = [], 0
+    for d in df.index:
+        va *= 1 + ra[d]
+        vb *= 1 + rb[d]
+        tot = va + vb
+        if abs(100 * va / tot - split["A"]) >= drift:
+            moved = abs(va - tot * split["A"] / 100)
+            tot -= moved * 2 * 0.002          # sell in one pie, buy in the other
+            va, vb = tot * split["A"] / 100, tot * split["B"] / 100
+            moves += 1
+        out.append((d, va + vb, df.loc[d, "bench"]))
+    curve = pd.DataFrame(out, columns=["date", "fund", "bench"]).set_index("date")
+    return {"curve": curve, "rebalances": [None] * moves, "turnover": 0.0}
+
+
 def run(px: pd.DataFrame, start: str = "2016-01-01") -> dict:
+    from . import model_b as MB
+
     saved = C.STOCKS
+    b_cols = [s["id"] for s in C.B_STOCKS]
+    pit_cols = [c for c in px if c.startswith("PIT_")]
+    a_px = px.drop(columns=[c for c in b_cols + pit_cols if c in px])
     try:
         C.STOCKS = [x for x in saved if x["id"] in px]
-        full = metrics(simulate(px.drop(columns=[c for c in px if c.startswith("PIT_")]), start))
+        sim_a = simulate(a_px, start)
+        full = metrics(sim_a)
         C.STOCKS = [x for x in C.BACKTEST_STOCKS_2015 if x["id"] in px]
-        pit = metrics(simulate(px.drop(columns=[x["id"] for x in saved if x["id"] in px]), start))
+        sim_pit_a = simulate(px.drop(columns=[x["id"] for x in saved if x["id"] in px] + [c for c in b_cols if c in px]), start)
+        pit = metrics(sim_pit_a)
         C.STOCKS = []
-        etf_only = metrics(simulate(px, start))
+        etf_only = metrics(simulate(a_px, start))
     finally:
         C.STOCKS = saved
-    return {"full": full, "pit": pit, "etf_only": etf_only}
+    core = [C.CORE["id"]]
+    bt = dict(trigger=C.B["trigger"], min_days=C.B["min_days"], window=WINDOW_B)
+    sim_b = simulate(px[core + [c for c in b_cols if c in px]], start, alloc=lambda w, prev, lvl: MB.allocate_b(w, prev), **bt)
+    b = metrics(sim_b)
+    pit_u = [x for x in C.BACKTEST_STOCKS_2015 if x["id"] in px]
+    sim_b_pit = simulate(px[core + [x["id"] for x in pit_u]], start,
+                         alloc=lambda w, prev, lvl: MB.allocate_b(w, prev, universe=[{**x, "sector": x["id"]} for x in pit_u]), **bt)
+    b_pit = metrics(sim_b_pit)
+    total = metrics(combine(sim_a["curve"], sim_b["curve"]))
+    total_fair = metrics(combine(sim_pit_a["curve"], sim_b_pit["curve"]))
+    return {"full": full, "pit": pit, "etf_only": etf_only, "b": b, "b_pit": b_pit, "total": total, "total_fair": total_fair}
 
 
 if __name__ == "__main__":
     from .data import download
 
-    px, meta = download("2014-01-01", extra=C.BACKTEST_STOCKS_2015)
+    px, meta = download("2013-06-01", extra=C.BACKTEST_STOCKS_2015 + C.B_STOCKS)
     out = run(px)
     out["meta"] = meta
     OUT.write_text(json.dumps(out, indent=1, default=float))
-    for k in ("full", "pit", "etf_only"):
+    for k in ("full", "pit", "etf_only", "b", "b_pit", "total", "total_fair"):
         m = out[k]
         print(f"{k:9s} {m['start']}→{m['end']}  fund {m['fund_cagr']:.2%}  bench {m['bench_cagr']:.2%}  "
               f"excess {m['excess_cagr']:+.2%}  TE {m['tracking_error']:.2%}  maxDD {m['fund_maxdd']:.1%} "

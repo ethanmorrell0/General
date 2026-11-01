@@ -13,7 +13,7 @@ class DataUnavailable(RuntimeError):
 
 
 def _instruments(extra=()):
-    items = [C.CORE] + C.FACTORS + C.REGIONS + C.STOCKS + [C.DEFENSIVE["gold"]] + list(extra)
+    items = [C.CORE] + C.FACTORS + C.REGIONS + C.STOCKS + [C.DEFENSIVE["gold"]] + C.B_STOCKS + list(extra)
     seen, out = set(), []
     for it in items:
         if it["id"] not in seen:

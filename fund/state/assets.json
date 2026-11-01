@@ -1,13 +1,14 @@
 {
  "artifact_url": "https://claude.ai/artifact/1Afb2GiezND8wugv4RnzGh",
  "assets": {
-  "summary": "aabd70ca86eb9315498cc74a3e9e1f35",
-  "holdings": "b5916d9cf747fe03e76f7ec3e0c51986",
-  "signals": "05f3174324bec1eb38af19568c5e0559",
-  "log": "a880eac1ba2cff65ae0bb209185bf306",
-  "nav": "bf2be831d964472fe883f1a549ad853d",
-  "mandate": "c6d70a1aaeb4fec5be054c5aa53b8e32",
-  "bt_metrics": "40ec211f046547caf7a4e237bf92f08b",
-  "bt_curve": "b3dbe538bbfb2a4872ea07aa9bce5811"
+  "summary": "639f34bad5c993ef14b0f1cdeab58bed",
+  "holdings": "67cb8efdf85624e1504000f95e89d89d",
+  "stats": "ccc522c0ab8bc45a84670010b97c7375",
+  "signals": "0286091350fcec993d85b9d1a383179f",
+  "log": "cedffa7b8954e7eecdc611e79358fd0c",
+  "nav": "7346445e09ef4bb37beb85bb7ff18a05",
+  "mandate": "f6786b7e20285ba2ca5a9dd828eb6f46",
+  "bt_metrics": "e2fe6742cbc52e8eb3f8d6c0a7e3609f",
+  "bt_curve": "20a909f6ef9818eb0c74f072747f658a"
  }
 }

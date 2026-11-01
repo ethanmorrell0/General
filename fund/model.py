@@ -215,11 +215,14 @@ def drifted_weights(units: dict[str, float], prices: dict[str, float]) -> tuple[
 
 
 def decide(target: dict[str, int], current: dict[str, float], prev_target: dict[str, int],
-           prev_level: int | None, level: int, days_since: int | None = None) -> tuple[bool, list[str]]:
+           prev_level: int | None, level: int, days_since: int | None = None,
+           trigger: dict | None = None, min_days: int | None = None) -> tuple[bool, list[str]]:
     """Should the fund trade today? Returns (rebalance, reasons)."""
     if not current:
         return True, ["First allocation: build the portfolio from cash"]
-    if days_since is not None and days_since < C.MIN_DAYS_BETWEEN and not (prev_level is not None and level > prev_level):
+    trig = trigger or C.TRIGGER
+    min_days = C.MIN_DAYS_BETWEEN if min_days is None else min_days
+    if days_since is not None and days_since < min_days and not (prev_level is not None and level is not None and level > prev_level):
         # Only a rise in market risk can override the cooling-off period.
         return False, []
     reasons = []
@@ -230,34 +233,42 @@ def decide(target: dict[str, int], current: dict[str, float], prev_target: dict[
             reasons.append("New holding(s): " + ", ".join(added))
         if removed:
             reasons.append("Exit(s): " + ", ".join(removed))
-    if prev_level is not None and level != prev_level:
+    if prev_level is not None and level is not None and level != prev_level:
         reasons.append(f"Market risk level changed from {prev_level} to {level} warning sign(s)")
     keys = set(target) | set(current)
     gaps = {k: target.get(k, 0) - current.get(k, 0) for k in keys}
     big = {k: g for k, g in gaps.items()
-           if abs(g) >= max(C.TRIGGER["position_gap_pp"], C.TRIGGER["position_gap_rel"] * max(target.get(k, 0), current.get(k, 0)))}
+           if abs(g) >= max(trig["position_gap_pp"], trig["position_gap_rel"] * max(target.get(k, 0), current.get(k, 0)))}
     if big:
         reasons.append("Position(s) well off target: " +
                        ", ".join(f"{k} {g:+.1f}pp" for k, g in sorted(big.items(), key=lambda x: -abs(x[1]))))
     total = sum(abs(g) for g in gaps.values())
-    if total >= C.TRIGGER["total_gap_pp"] and not big:
+    if total >= trig["total_gap_pp"] and not big:
         reasons.append(f"Overall drift reached {total:.1f} points")
     return bool(reasons), reasons
 
 
+def _ccy_map():
+    m = {s["id"]: s["ccy"] for s in C.STOCKS + C.BACKTEST_STOCKS_2015 + C.B_STOCKS}
+    return m
+
+
 def trade_cost(trades: dict[str, float]) -> float:
-    """Cost in percent of NAV for a set of weight changes (percentage points)."""
-    uk = {s["id"] for s in C.STOCKS if s["ccy"] == "GBp"}
-    fx = {s["id"] for s in C.STOCKS if s["ccy"] != "GBp"}
+    """Cost in percent of NAV for a set of weight changes (percentage points).
+    Pie B names (ids starting B_) include small caps, so they get wider spreads."""
+    ccy = _ccy_map()
     cost = 0.0
     for k, g in trades.items():
         if k == "CASH":
             continue
-        if k in uk:
-            rate = C.COSTS["uk_stock"] if g > 0 else C.COSTS["uk_stock"] - 0.005  # stamp duty on buys only
-        elif k in fx:
+        small = k.startswith("B_")
+        if k in ccy and ccy[k] == "GBp":
+            rate = C.COSTS["uk_stock"] - (0 if g > 0 else 0.005)   # stamp duty on buys only
+        elif k in ccy:
             rate = C.COSTS["usd_eur_stock"]
         else:
             rate = C.COSTS["etf"]
+        if small:
+            rate += C.COSTS["small_cap_extra"]
         cost += abs(g) * rate
     return cost

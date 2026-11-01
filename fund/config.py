@@ -106,7 +106,7 @@ TRIGGER = {
 }
 
 # Trading costs used in the backtest (one-way, as a fraction of the amount traded).
-COSTS = {"etf": 0.0010, "usd_eur_stock": 0.0025, "uk_stock": 0.0060}
+COSTS = {"etf": 0.0010, "usd_eur_stock": 0.0025, "uk_stock": 0.0060, "small_cap_extra": 0.0015}
 
 LOOKBACK = {"mom_long": 252, "skip": 21, "mom_short": 126, "vol": 63, "sma": 200, "regime_ret": 63}
 SMOOTH_LAGS = [0, 5, 10, 15, 20]  # scores are averaged over these day-lags to cut noise
@@ -127,3 +127,57 @@ BACKTEST_STOCKS_2015 = [
         ("MC.PA", "LVMH", "EUR"),
     ]
 ]
+
+
+# ---------------------------------------------------------------------------
+# Two pies. A = the index-plus-2% strategy above. B = pure stock selection.
+# ---------------------------------------------------------------------------
+SPLIT = {"A": 50, "B": 50}   # % of the whole fund
+SPLIT_DRIFT_PP = 5           # rebalance between the pies when either drifts 5+ points from 50%
+
+# Pie B: maximum long-term return, risk-capped. Price-based signals only
+# (momentum, 52-week-high proximity, trend), sized by inverse volatility.
+B = {
+    "n": 12,                 # number of stocks held when enough qualify
+    "max_w": 15,             # % of pie B per stock
+    "min_w": 4,
+    "sector_cap": 35,        # % of pie B per sector
+    "keep_rank": 40,         # a holding stays while it ranks in the top 40
+    "slack_trend": 0.10,     # holdings may sit up to 10% below their 200-day average
+    # Small caps swing a lot, so pie B tolerates more drift and trades less often.
+    "trigger": {"position_gap_pp": 3.0, "position_gap_rel": 0.5, "total_gap_pp": 15.0},
+    "min_days": 20,
+    "pinned_ratio": 0.40,    # skip a stock whose 40-day volatility is under 40% of its usual level
+    "score": {"mom12": 0.40, "mom6": 0.20, "high52": 0.25, "vol": 0.15},
+}
+
+# Universe for pie B: global large, mid and small caps across every sector,
+# all listed on exchanges Trading 212 offers. Includes plenty of names that
+# have done badly, so the rules have real losers to avoid.
+_B = """
+AAPL USD Tech|MSFT USD Tech|NVDA USD Tech|GOOGL USD Comms|AMZN USD Consumer|META USD Comms|AVGO USD Tech|TSLA USD Consumer
+BRK-B USD Financials|JPM USD Financials|V USD Financials|MA USD Financials|LLY USD Health|UNH USD Health|XOM USD Energy|CVX USD Energy
+JNJ USD Health|PG USD Staples|KO USD Staples|PEP USD Staples|WMT USD Staples|COST USD Staples|HD USD Consumer|MCD USD Consumer
+NKE USD Consumer|DIS USD Comms|NFLX USD Comms|ADBE USD Tech|CRM USD Tech|ORCL USD Tech|INTC USD Tech|AMD USD Tech
+QCOM USD Tech|TXN USD Tech|IBM USD Tech|CSCO USD Tech|BA USD Industrials|CAT USD Industrials|DE USD Industrials|GE USD Industrials
+HON USD Industrials|LMT USD Industrials|RTX USD Industrials|UPS USD Industrials|PFE USD Health|MRK USD Health|ABBV USD Health|TMO USD Health
+ISRG USD Health|GS USD Financials|BAC USD Financials|WFC USD Financials|C USD Financials|BLK USD Financials|SPGI USD Financials|NEE USD Utilities
+DUK USD Utilities|T USD Comms|VZ USD Comms|SBUX USD Consumer|F USD Consumer|GM USD Consumer|PYPL USD Financials|MU USD Tech
+AXON USD Industrials|DECK USD Consumer|ELF USD Staples|CROX USD Consumer|SMCI USD Tech|ENPH USD Energy|FSLR USD Energy|PLUG USD Energy
+ROKU USD Comms|ETSY USD Consumer|PINS USD Comms|SNAP USD Comms|ZM USD Tech|DOCU USD Tech|PTON USD Consumer|CVNA USD Consumer
+APP USD Tech|PLTR USD Tech|CRWD USD Tech|DDOG USD Tech|NET USD Tech|SHOP USD Tech|MELI USD Consumer|SE USD Consumer
+TTD USD Comms|HIMS USD Health|RKLB USD Industrials|AFRM USD Financials|UPST USD Financials|SOFI USD Financials|WING USD Consumer|TXRH USD Consumer
+LNTH USD Health|MEDP USD Health|FIX USD Industrials|EME USD Industrials|STRL USD Industrials|POWL USD Industrials|CASY USD Staples|SAIA USD Industrials
+ODFL USD Industrials|CELH USD Staples|ANF USD Consumer|VRT USD Industrials|COIN USD Financials|DKNG USD Consumer|ABNB USD Consumer|UBER USD Industrials
+TSM USD Tech|BABA USD Consumer|PDD USD Consumer|NU USD Financials|BIDU USD Comms|INFY USD Tech|SONY USD Consumer|TM USD Consumer
+NVO USD Health|ASML.AS EUR Tech|SAP.DE EUR Tech|MC.PA EUR Consumer|RMS.PA EUR Consumer|SU.PA EUR Industrials|AIR.PA EUR Industrials|SIE.DE EUR Industrials
+ALV.DE EUR Financials|ADYEN.AS EUR Financials|RHM.DE EUR Industrials|IFX.DE EUR Tech|BNP.PA EUR Financials|VOW3.DE EUR Consumer|NESN.SW CHF Staples|AZN.L GBp Health
+SHEL.L GBp Energy|HSBA.L GBp Financials|ULVR.L GBp Staples|RR.L GBp Industrials|BA.L GBp Industrials|REL.L GBp Industrials|LSEG.L GBp Financials|BP.L GBp Energy
+GSK.L GBp Health|DGE.L GBp Staples|BARC.L GBp Financials|LLOY.L GBp Financials|VOD.L GBp Comms|TSCO.L GBp Staples|BT-A.L GBp Comms|IAG.L GBp Industrials
+GAW.L GBp Consumer|JD.L GBp Consumer|ASC.L GBp Consumer|BOO.L GBp Consumer|OCDO.L GBp Staples|DARK.L GBp Tech|CCC.L GBp Tech|IGG.L GBp Financials
+"""
+B_STOCKS = []
+for _cell in _B.replace("\n", "|").split("|"):
+    if _cell.strip():
+        _t, _c, _s = _cell.split()
+        B_STOCKS.append({"id": "B_" + _t, "ticker": _t, "name": _t.split(".")[0], "tickers": [_t], "ccy": _c, "sector": _s})
