@@ -14,7 +14,7 @@ from datetime import date, datetime
 
 from .. import maths
 
-FD_URL = "https://www.football-data.co.uk/mmz4281/{season}/{div}.csv"
+FD_URL = "https://football-data.co.uk/mmz4281/{season}/{div}.csv"
 
 POOLS = {
     "ENG": ["E0", "E1", "E2", "E3", "EC"],

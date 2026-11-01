@@ -12,16 +12,19 @@ from datetime import date
 
 from .. import maths
 
+# Home advantage (points) is fixed at long-run market values: fitting it is distorted by
+# mismatches against teams that appear only once or twice (FCS visitors, exhibitions).
 SPORT_CFG = {
     "americanfootball_nfl": {"espn": "football/nfl", "groups": None, "margin_sd": 13.5, "total_sd": 10.5,
-                             "xi": 0.004, "ridge": 3.0, "season_start": (9, 1)},
+                             "xi": 0.004, "ridge": 3.0, "hfa": 1.5},
     "basketball_nba": {"espn": "basketball/nba", "groups": None, "margin_sd": 12.0, "total_sd": 18.0,
-                       "xi": 0.008, "ridge": 6.0, "season_start": (10, 15)},
+                       "xi": 0.008, "ridge": 6.0, "hfa": 2.3},
     "americanfootball_ncaaf": {"espn": "football/college-football", "groups": "80", "margin_sd": 15.5,
-                               "total_sd": 14.5, "xi": 0.004, "ridge": 2.5, "season_start": (8, 20)},
+                               "total_sd": 14.5, "xi": 0.004, "ridge": 2.5, "hfa": 2.8},
     "basketball_ncaab": {"espn": "basketball/mens-college-basketball", "groups": "50", "margin_sd": 10.5,
-                         "total_sd": 13.5, "xi": 0.008, "ridge": 5.0, "season_start": (11, 1)},
+                         "total_sd": 13.5, "xi": 0.008, "ridge": 5.0, "hfa": 3.2},
 }
+MIN_GAMES = 4  # drop exhibition sides (All-Star, Pro Bowl) and one-off minor opponents
 
 
 @dataclass
@@ -80,6 +83,11 @@ def discrete_normal(mu: float, sd: float) -> dict[int, float]:
 def fit(games: list[Game], ref: date, sport_key: str, iters: int = 40) -> RatingsModel:
     cfg = SPORT_CFG[sport_key]
     xi, ridge = cfg["xi"], cfg["ridge"]
+    counts: dict[str, int] = {}
+    for g in games:
+        counts[g.home] = counts.get(g.home, 0) + 1
+        counts[g.away] = counts.get(g.away, 0) + 1
+    games = [g for g in games if counts[g.home] >= MIN_GAMES and counts[g.away] >= MIN_GAMES]
     gs = [(g, math.exp(-xi * max((ref - g.day).days, 0))) for g in games if g.day <= ref]
     teams = sorted({g.home for g, _ in gs} | {g.away for g, _ in gs})
     off = {t: 0.0 for t in teams}
@@ -89,8 +97,7 @@ def fit(games: list[Game], ref: date, sport_key: str, iters: int = 40) -> Rating
         return RatingsModel(off, dfn, weight, 0.0, 0.0, cfg["margin_sd"], cfg["total_sd"], teams)
     tw = sum(w for _, w in gs)
     mu = sum(w * (g.hp + g.ap) for g, w in gs) / (2 * tw)
-    nn = [(g, w) for g, w in gs if not g.neutral]
-    hfa = (sum(w * (g.hp - g.ap) for g, w in nn) / sum(w for _, w in nn)) if nn else 0.0
+    hfa = cfg["hfa"]
     for g, w in gs:
         weight[g.home] += w
         weight[g.away] += w
@@ -115,9 +122,6 @@ def fit(games: list[Game], ref: date, sport_key: str, iters: int = 40) -> Rating
             hh = 0.0 if g.neutral else hfa / 2
             resid += w * ((g.hp - hh - off[g.home] + dfn[g.away]) + (g.ap + hh - off[g.away] + dfn[g.home]))
         mu = resid / (2 * tw)
-        if nn:
-            hfa = sum(w * ((g.hp - g.ap) - (off[g.home] + dfn[g.home]) + (off[g.away] + dfn[g.away]))
-                      for g, w in nn) / sum(w for _, w in nn)
     return RatingsModel(off, dfn, weight, mu, hfa, cfg["margin_sd"], cfg["total_sd"], teams)
 
 
@@ -127,6 +131,8 @@ def parse_espn(payload: dict) -> list[Game]:
         try:
             comp = ev["competitions"][0]
             if not comp.get("status", ev.get("status", {})).get("type", {}).get("completed", False):
+                continue
+            if ev.get("season", {}).get("type") == 1:  # preseason
                 continue
             teams = {c["homeAway"]: c for c in comp["competitors"]}
             day = date.fromisoformat(ev["date"][:10])

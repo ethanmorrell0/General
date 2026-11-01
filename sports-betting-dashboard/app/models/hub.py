@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 
 import httpx
@@ -27,7 +28,7 @@ class ModelHub:
         self.us: dict[str, tuple[float, ratings.RatingsModel]] = {}
         self.errors: dict[str, str] = {}
         self._lock = threading.Lock()
-        self._client = httpx.Client(timeout=20, headers={"User-Agent": "Mozilla/5.0 betting-dashboard"})
+        self._client = httpx.Client(timeout=20, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 betting-dashboard"})
 
     # ---------- data loading ----------
 
@@ -60,39 +61,60 @@ class ModelHub:
                 matches.extend(football.parse_fd_csv(text))
         return matches
 
-    def _espn_games(self, sport_key: str) -> list[ratings.Game]:
+    def _espn_day(self, sport_key: str, day: date) -> dict | None:
+        """One day's scoreboard. ESPN rejects date ranges, and `limit=1000` silently caps
+        some sports at 25 games, so query single days with limit=300."""
         cfg = ratings.SPORT_CFG[sport_key]
+        params = {"dates": f"{day:%Y%m%d}", "limit": 300}
+        if cfg["groups"]:
+            params["groups"] = cfg["groups"]
+        payload = self._get(ESPN_URL.format(path=cfg["espn"]), params).json()
+        # Keep only what the parser needs, so the cache stays small.
+        return {"events": [{"date": e.get("date"), "status": e.get("status"),
+                            "season": {"type": e.get("season", {}).get("type")},
+                            "competitions": [{
+                                "neutralSite": c.get("neutralSite"),
+                                "status": c.get("status"),
+                                "competitors": [{"homeAway": t.get("homeAway"), "score": t.get("score"),
+                                                 "team": {"displayName": t.get("team", {}).get("displayName")}}
+                                                for t in c.get("competitors", [])]}
+                                for c in e.get("competitions", [])[:1]]}
+                           for e in payload.get("events", [])]}
+
+    def _espn_games(self, sport_key: str) -> list[ratings.Game]:
         today = date.today()
-        start = today - timedelta(days=LOOKBACK_DAYS)
+        days = [today - timedelta(days=i) for i in range(LOOKBACK_DAYS, -1, -1)]
+        payloads: dict[date, dict] = {}
+        missing = []
+        for d in days:
+            closed = d < today - timedelta(days=3)
+            cached = db.kv_get(f"espn2:{sport_key}:{d:%Y%m%d}", max_age=None if closed else 6 * 3600)
+            if cached is None:
+                missing.append(d)
+            else:
+                payloads[d] = cached
+        failures = 0
+
+        def fetch(d: date):
+            try:
+                return d, self._espn_day(sport_key, d), None
+            except (httpx.HTTPError, ValueError) as e:
+                return d, None, e
+
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            for d, payload, err in pool.map(fetch, missing):
+                if payload is None:
+                    failures += 1
+                    self.errors[f"ratings:{sport_key}"] = f"ESPN fetch failed for {failures} day(s), e.g. {d}: {err}"
+                    payload = db.kv_get(f"espn2:{sport_key}:{d:%Y%m%d}") or {"events": []}
+                else:
+                    db.kv_set(f"espn2:{sport_key}:{d:%Y%m%d}", payload)
+                payloads[d] = payload
+        if not failures:
+            self.errors.pop(f"ratings:{sport_key}", None)
         games: list[ratings.Game] = []
-        d = start
-        while d <= today:
-            end = min(d + timedelta(days=6), today)
-            key = f"espn:{sport_key}:{d:%Y%m%d}-{end:%Y%m%d}"
-            closed = end < today - timedelta(days=3)
-            payload = db.kv_get(key, max_age=None if closed else 6 * 3600)
-            if payload is None:
-                params = {"dates": f"{d:%Y%m%d}-{end:%Y%m%d}", "limit": 1000}
-                if cfg["groups"]:
-                    params["groups"] = cfg["groups"]
-                try:
-                    payload = self._get(ESPN_URL.format(path=cfg["espn"]), params).json()
-                    # Keep only what the parser needs, so the cache stays small.
-                    payload = {"events": [{"date": e.get("date"), "status": e.get("status"),
-                                           "competitions": [{
-                                               "neutralSite": c.get("neutralSite"),
-                                               "status": c.get("status"),
-                                               "competitors": [{"homeAway": t.get("homeAway"), "score": t.get("score"),
-                                                                "team": {"displayName": t.get("team", {}).get("displayName")}}
-                                                               for t in c.get("competitors", [])]}
-                                               for c in e.get("competitions", [])[:1]]}
-                                          for e in payload.get("events", [])]}
-                    db.kv_set(key, payload)
-                except (httpx.HTTPError, ValueError) as e:
-                    self.errors[f"ratings:{sport_key}"] = f"ESPN fetch failed: {e}"
-                    payload = db.kv_get(key) or {"events": []}
-            games.extend(ratings.parse_espn(payload))
-            d = end + timedelta(days=1)
+        for d in days:
+            games.extend(ratings.parse_espn(payloads.get(d, {"events": []})))
         return games
 
     # ---------- fitting ----------
