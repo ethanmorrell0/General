@@ -174,7 +174,7 @@ NVO USD Health|ASML.AS EUR Tech|SAP.DE EUR Tech|MC.PA EUR Consumer|RMS.PA EUR Co
 ALV.DE EUR Financials|ADYEN.AS EUR Financials|RHM.DE EUR Industrials|IFX.DE EUR Tech|BNP.PA EUR Financials|VOW3.DE EUR Consumer|NESN.SW CHF Staples|AZN.L GBp Health
 SHEL.L GBp Energy|HSBA.L GBp Financials|ULVR.L GBp Staples|RR.L GBp Industrials|BA.L GBp Industrials|REL.L GBp Industrials|LSEG.L GBp Financials|BP.L GBp Energy
 GSK.L GBp Health|DGE.L GBp Staples|BARC.L GBp Financials|LLOY.L GBp Financials|VOD.L GBp Comms|TSCO.L GBp Staples|BT-A.L GBp Comms|IAG.L GBp Industrials
-GAW.L GBp Consumer|JD.L GBp Consumer|ASC.L GBp Consumer|BOO.L GBp Consumer|OCDO.L GBp Staples|DARK.L GBp Tech|CCC.L GBp Tech|IGG.L GBp Financials
+GAW.L GBp Consumer|JD.L GBp Consumer|ASC.L GBp Consumer|OCDO.L GBp Staples|CCC.L GBp Tech|IGG.L GBp Financials
 """
 B_STOCKS = []
 for _cell in _B.replace("\n", "|").split("|"):

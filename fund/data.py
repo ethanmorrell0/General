@@ -94,5 +94,11 @@ def download(start: str = "2014-01-01", extra=()) -> tuple[pd.DataFrame, dict]:
     # Other exchanges have different holidays: carry the last price forward a
     # few days, then keep London trading days only.
     px = pd.DataFrame(cols).sort_index().ffill(limit=5).reindex(cal)
+    # Use completed trading days only. Before the US close (about 21:00 UK),
+    # today's row holds intraday prices, so a 10am run decides on yesterday's
+    # closes and never mixes in half a day.
+    now = pd.Timestamp.now(tz="Europe/London")
+    if len(px) and px.index[-1].date() >= now.date() and now.hour * 60 + now.minute < 21 * 60 + 30:
+        px = px.iloc[:-1]
     meta = {"tickers_used": used, "missing": missing, "last_date": str(px.index[-1].date())}
     return px, meta

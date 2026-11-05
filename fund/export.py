@@ -180,11 +180,19 @@ def build() -> dict[str, list[dict]]:
             "nav": nav_rows, "mandate": mandate, "bt_metrics": bt_metrics, "bt_curve": bt_curve}
 
 
+SITE = Path(__file__).parent / "site"
+
+
 def main():
-    OUT.mkdir(parents=True, exist_ok=True)
-    for name, rows in build().items():
-        (OUT / f"{name}.json").write_text(json.dumps(rows, default=float))
-        print(f"{name}: {len(rows)} rows")
+    """Write one data.json for the dashboard page, next to the page itself."""
+    import datetime as dt
+    data = build()
+    data["generated"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    SITE.mkdir(parents=True, exist_ok=True)
+    (SITE / "data.json").write_text(json.dumps(data, default=float, separators=(",", ":")))
+    for name, rows in data.items():
+        if isinstance(rows, list):
+            print(f"{name}: {len(rows)} rows")
 
 
 if __name__ == "__main__":

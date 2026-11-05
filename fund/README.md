@@ -12,7 +12,13 @@ only when it is worth trading. Trades are worked out on the whole fund (netting
 stocks both pies hold) and shown per pie. Money moves between the pies when
 either drifts to 45% or 55%.
 
-Dashboard: https://claude.ai/artifact/1Afb2GiezND8wugv4RnzGh
+Dashboard: https://claude.ai/artifact/SYQuqVLu1G7sEACFyiJg3W
+
+The dashboard is also where the fund's state lives: it publishes `state.json`
+and `backtest.json` next to the page, and every run reads them back from there.
+That way a scheduled or on-demand run needs no push access to this repo. The
+Sync button calls the Claude Code Remote connector's `fire_trigger` for the
+daily task (`trig_01PC31FgzjK37vrhh5kAgWyL`), which runs the routine below.
 
 ## Pie A mandate
 
@@ -57,31 +63,33 @@ a position is ≥3pp and ≥25% of its size off target, or total drift ≥8pp.
 - `dashboard/index.html` — the dashboard page (stored in the artifact)
 - `tests/` — logic tests on synthetic prices: `python -m pytest -q fund/tests`
 
-## Daily routine (what the 07:00 scheduled session does)
+## Daily routine (what the 10:00 UK scheduled run and the Sync button do)
 
-1. `git fetch origin claude/active-equity-fund && git checkout claude/active-equity-fund && git pull origin claude/active-equity-fund`
+1. Get the code (read access is enough): `git fetch origin claude/active-equity-fund && git checkout claude/active-equity-fund && git pull origin claude/active-equity-fund`
 2. `pip install -q yfinance pandas numpy`
-3. `python -m fund.run daily`. If it fails because prices can't be downloaded,
-   run `python -m fund.run unavailable "<one-line reason>"` instead.
-4. On the first run of a calendar month (or if `fund/state/backtest.json` is missing
-   and data is available), run `python -m fund.backtest`.
-5. Read `fund/state/data.json` (latest entry, holdings, signals). Write a plain-English
-   note of 2–5 short sentences: what the decision is and why, in terms a non-specialist
-   follows (which holding changed and what signal moved it, or why nothing changed),
-   and anything worth watching. No hype, no predictions. Save it with
-   `python -m fund.run annotate "<note>"`.
-6. `python -m fund.export`
-7. Update the dashboard (artifact `https://claude.ai/artifact/1Afb2GiezND8wugv4RnzGh`):
-   - `Artifact` action `read` on the url first.
-   - For each of `summary`, `holdings`, `stats`, `signals`, `log`, `nav` (plus `bt_metrics`,
-     `bt_curve` if the backtest ran): upload `fund/state/dash/<id>.json` with
-     `Artifact` publish, `url`, `asset: true`, `file_path` (one call per file).
-   - `ArtifactData` `get` each `datasets/<id>` for its version, then one `batch` of
-     `update`s setting `source: {kind: "file", url: "<new /_blob/... url>", name: "<id>.json"}`
-     and `updated: {at: <ISO now>, by: "Claude (fund engine)"}`, each with `if_version`.
-   - Delete the previous assets listed in `fund/state/assets.json` (`Artifact` action
-     `delete`, `url`, `path` = old id) and write the new ids into that file.
-8. `git add fund/state && git commit -m "Fund run <date>: <decision>" && git push -u origin claude/active-equity-fund`
+3. Load the fund's state from the dashboard: `Artifact` action `read` with
+   `url` https://claude.ai/artifact/SYQuqVLu1G7sEACFyiJg3W, then `read` again with
+   `paths: ["state.json", "backtest.json"]` and copy the saved files over
+   `fund/state/state.json` and `fund/state/backtest.json`. Never start from the
+   repo's copy when the dashboard's can be read: the repo's is older.
+4. `python -m fund.run daily`. If prices can't be downloaded, run
+   `python -m fund.run unavailable "<one-line reason>"` instead. Runs use only
+   completed trading days, so a 10am run decides on the previous close.
+5. On the first run of a calendar month (or if `backtest.json` is missing), run
+   `python -m fund.backtest`.
+6. Read `fund/state/data.json`. Write a plain-English note of 2–6 short sentences
+   covering both pies: each pie's decision and the signal behind it, any money to
+   move between the pies, and anything worth watching. No hype, no predictions.
+   Save it with `python -m fund.run annotate "<note>"`. Skip on a NO_DATA day.
+   On a NO_NEW_DATA day (e.g. a second sync on the same day) one sentence is enough.
+7. `python -m fund.export` (writes `fund/site/data.json`).
+8. Publish: `Artifact` publish with `url` above, `file_path: fund/site/index.html`,
+   `files: {"data.json": "fund/site/data.json", "state.json": "fund/state/state.json",
+   "backtest.json": "fund/state/backtest.json"}`. Leave `capabilities` out (it keeps
+   the Sync button's connector access). If the publish is refused because the
+   dashboard changed since step 3, another run finished first: start again from
+   step 3 once.
+9. No git push is needed. Code changes are committed by hand from an interactive session.
 
 ## Backtest (2016 to 2026-10, after costs)
 
