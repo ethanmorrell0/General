@@ -113,7 +113,12 @@ def test_daily_run_end_to_end(tmp_path, monkeypatch):
     assert e1["action"] == "REBALANCE"
     st = json.loads((tmp_path / "state.json").read_text())
     assert abs(st["nav"][-1]["A_val"] / (st["nav"][-1]["A_val"] + st["nav"][-1]["B_val"]) - 0.5) < 0.01
+    R.annotate("Day one note")
     assert R.daily("2023-06-02")["action"] == "NO_NEW_DATA"
+    R.annotate("Should not replace the day-one note")
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert len(st["log"]) == 1 and st["log"][-1]["action"] == "REBALANCE"
+    assert st["log"][-1]["note"] == "Day one note"
     for i, n in enumerate(range(29, -1, -1)):
         monkeypatch.setattr(D, "download", lambda start="2014-01-01", n=n: (px.iloc[:len(px) - n], {"last_date": "y"}))
         e = R.daily(f"2023-07-{i + 1:02d}")

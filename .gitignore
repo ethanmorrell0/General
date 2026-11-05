@@ -4,3 +4,8 @@ __pycache__/
 .pytest_cache/
 .env
 sports-betting-dashboard/data/
+# Fund run outputs: the live copies are published with the dashboard.
+fund/state/state.json
+fund/state/data.json
+fund/state/backtest.json
+fund/site/data.json

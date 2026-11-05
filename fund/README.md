@@ -67,7 +67,8 @@ a position is ≥3pp and ≥25% of its size off target, or total drift ≥8pp.
 
 1. Get the code (read access is enough): `git fetch origin claude/active-equity-fund && git checkout claude/active-equity-fund && git pull origin claude/active-equity-fund`
 2. `pip install -q yfinance pandas numpy`
-3. Load the fund's state from the dashboard: `Artifact` action `read` with
+3. Load the fund's state from the dashboard (if it can't be read, stop and report it;
+   the repo holds no copy): `Artifact` action `read` with
    `url` https://claude.ai/artifact/SYQuqVLu1G7sEACFyiJg3W, then `read` again with
    `paths: ["state.json", "backtest.json"]` and copy the saved files over
    `fund/state/state.json` and `fund/state/backtest.json`. Never start from the
@@ -81,7 +82,8 @@ a position is ≥3pp and ≥25% of its size off target, or total drift ≥8pp.
    covering both pies: each pie's decision and the signal behind it, any money to
    move between the pies, and anything worth watching. No hype, no predictions.
    Save it with `python -m fund.run annotate "<note>"`. Skip on a NO_DATA day.
-   On a NO_NEW_DATA day (e.g. a second sync on the same day) one sentence is enough.
+   On a NO_NEW_DATA run (e.g. a second sync on the same day) write no note: the
+   latest decision and its note stay as they are.
 7. `python -m fund.export` (writes `fund/site/data.json`).
 8. Publish: `Artifact` publish with `url` above, `file_path: fund/site/index.html`,
    `files: {"data.json": "fund/site/data.json", "state.json": "fund/state/state.json",

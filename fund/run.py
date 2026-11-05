@@ -94,12 +94,14 @@ def daily(today: str | None = None) -> dict:
     run_date = today or dt.date.today().isoformat()
 
     if state["last_data_date"] == data_date:
-        entry = {"run_date": run_date, "data_date": data_date, "action": "NO_NEW_DATA",
-                 "reasons": ["No new closing prices since the last run (market holiday or weekend)"],
-                 "pies": {}, "trades": {}, "note": ""}
-        _append_log(state, entry)
+        # Nothing new to decide. Keep the latest decision (and its note) on the
+        # dashboard untouched; only record that we checked.
+        state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        state["last_run_action"] = "NO_NEW_DATA"
         save(state)
-        return entry
+        return {"run_date": run_date, "data_date": data_date, "action": "NO_NEW_DATA",
+                "reasons": [f"No new closing prices since {data_date}; the latest decision stands"],
+                "pies": {}, "trades": {}, "note": ""}
 
     last = px.iloc[-1]
     prices = {k: float(last[k]) for k in px.columns if last.notna()[k]}
@@ -216,6 +218,8 @@ def daily(today: str | None = None) -> dict:
              "split": {"action": "REBALANCE" if split_go and not first else "HOLD", "share_a": round(share_a, 2)},
              "reasons": reasons, "trades": trades_total, "note": "", "regime_level": res["A"]["regime"]["level"]}
     _append_log(state, entry)
+    state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    state["last_run_action"] = entry["action"]
     save(state)
     return entry
 
@@ -254,14 +258,23 @@ def annotate(text: str) -> None:
     state = load_state()
     if not state["log"]:
         raise SystemExit("Nothing to annotate yet")
+    if state.get("last_run_action") in ("NO_NEW_DATA", "NO_DATA"):
+        print("Last run made no new decision; the existing note is kept.")
+        return
     state["log"][-1]["note"] = text.strip()
     save(state)
 
 
 def unavailable(why: str) -> None:
+    """Record a failed download without hiding the latest real decision."""
     state = load_state()
-    _append_log(state, {"run_date": dt.date.today().isoformat(), "data_date": state.get("last_data_date"),
-                        "action": "NO_DATA", "reasons": [why], "pies": {}, "trades": {}, "note": ""})
+    today = dt.date.today().isoformat()
+    state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    state["last_run_action"] = "NO_DATA"
+    state["last_error"] = why
+    if not state["log"] or state["log"][-1]["run_date"] != today:
+        _append_log(state, {"run_date": today, "data_date": state.get("last_data_date"),
+                            "action": "NO_DATA", "reasons": [why], "pies": {}, "trades": {}, "note": ""})
     save(state)
 
 
