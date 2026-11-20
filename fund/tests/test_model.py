@@ -118,6 +118,9 @@ def test_daily_run_end_to_end(tmp_path, monkeypatch):
     R.annotate("Should not replace the day-one note")
     st = json.loads((tmp_path / "state.json").read_text())
     assert len(st["log"]) == 1 and st["log"][-1]["action"] == "REBALANCE"
+    # An older close (Yahoo missing the latest row) must not be processed.
+    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-31], {"last_date": "x"}))
+    assert R.daily("2023-06-03")["action"] == "NO_NEW_DATA"
     assert st["log"][-1]["note"] == "Day one note"
     for i, n in enumerate(range(29, -1, -1)):
         monkeypatch.setattr(D, "download", lambda start="2014-01-01", n=n: (px.iloc[:len(px) - n], {"last_date": "y"}))

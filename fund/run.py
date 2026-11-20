@@ -25,7 +25,7 @@ DATA = Path(__file__).parent / "state" / "data.json"
 
 A_ITEMS = [C.CORE] + C.FACTORS + C.REGIONS + C.STOCKS + [C.DEFENSIVE["gold"], C.DEFENSIVE["cash"]]
 NAMES = {it["id"]: it["name"] for it in A_ITEMS}
-NAMES.update({s["id"]: s["ticker"] for s in C.B_STOCKS})
+NAMES.update({s["id"]: s["name"] for s in C.B_STOCKS})
 SLEEVE = {C.CORE["id"]: "Core", C.DEFENSIVE["gold"]["id"]: "Defensive", "CASH": "Cash",
           **{f["id"]: "Style" for f in C.FACTORS}, **{r["id"]: "Region" for r in C.REGIONS},
           **{s["id"]: "Stock" for s in C.STOCKS}, **{s["id"]: s["sector"] for s in C.B_STOCKS}}
@@ -62,6 +62,7 @@ def load_state() -> dict:
 
 
 def save(state: dict) -> None:
+    STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=1, default=float))
     DATA.write_text(json.dumps(dashboard_payload(state), indent=1, default=float))
 
@@ -93,7 +94,9 @@ def daily(today: str | None = None) -> dict:
     data_date = str(px.index[-1].date())
     run_date = today or dt.date.today().isoformat()
 
-    if state["last_data_date"] == data_date:
+    if state["last_data_date"] and data_date <= state["last_data_date"]:
+        # Yahoo sometimes serves a morning snapshot without the latest close;
+        # never step back to an older day.
         # Nothing new to decide. Keep the latest decision (and its note) on the
         # dashboard untouched; only record that we checked.
         state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

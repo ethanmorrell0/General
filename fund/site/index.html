@@ -1,421 +1,512 @@
 <title>Active Equity Fund</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
 <style>
-  /* Layout: a fund factsheet — header with sync, scorecard, then the allocation desk, then evidence (charts, log, signals, backtest, rules). */
+  /* Layout: an investor's app, phone first — what to do today, invest cash, your two pies as tiles, then fold-out detail. */
   :root {
-    --bg: #f5f6f3; --panel: #ffffff; --fg: #17201b; --muted: #5b6660; --line: #dde2dc;
-    --accent: #1f6f5c; --accent-fg: #ffffff; --ok: #1b7a4a; --warn: #9a5800; --bad: #b3261e;
-    --c1: #1f6f5c; --c2: #c2620f; --c3: #3b5bdb; --c-muted: #9aa49f; --grid: #e9ece8;
+    --bg: #f4f5f2; --panel: #ffffff; --sunk: #eef1ec; --fg: #17201b; --muted: #5b6660; --line: #dde2dc;
+    --accent: #1f6f5c; --accent-soft: #e3f0eb; --accent-fg: #ffffff; --ok: #1b7a4a; --warn: #9a5800; --warn-soft: #fbefdc; --bad: #b3261e;
+    --pa: #1f6f5c; --pb: #b4561a; --c3: #3b5bdb; --c-muted: #9aa49f; --grid: #e9ece8;
     --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
     --font-num: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --r: 8px;
+    --r: 12px; --r-sm: 8px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0f1412; --panel: #161d1a; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
-      --accent: #4fb79a; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --bad: #f07167;
-      --c1: #4fb79a; --c2: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
+      --bg: #0f1412; --panel: #161d1a; --sunk: #1c2421; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
+      --accent: #4fb79a; --accent-soft: #1b2e28; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --warn-soft: #33261a; --bad: #f07167;
+      --pa: #4fb79a; --pb: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0f1412; --panel: #161d1a; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
-    --accent: #4fb79a; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --bad: #f07167;
-    --c1: #4fb79a; --c2: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
+    --bg: #0f1412; --panel: #161d1a; --sunk: #1c2421; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
+    --accent: #4fb79a; --accent-soft: #1b2e28; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --warn-soft: #33261a; --bad: #f07167;
+    --pa: #4fb79a; --pb: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
     color-scheme: dark;
   }
   body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
-  .af { max-width: 1180px; margin-inline: auto; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 28px; }
+  .af { max-width: 1100px; margin-inline: auto; padding-block: 18px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
   h1, h2, h3 { margin: 0; text-wrap: balance; }
-  .af-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; }
-  .af-head-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1 1 22rem; }
-  .af-title { font-family: var(--font-num); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.1rem); letter-spacing: -0.01em; }
-  .af-sub { color: var(--muted); margin: 0; max-width: 70ch; }
-  .af-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .af-pill { display: inline-flex; align-items: center; gap: .45em; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); background: var(--panel); }
-  .af-pill::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
-  .is-rebalance { color: var(--warn); } .is-hold { color: var(--ok); } .is-wait { color: var(--muted); } .is-bad { color: var(--bad); }
-  .af-meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-  .af-sync { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 1 20rem; min-width: 0; }
-  .af-btn { font: inherit; font-weight: 600; font-size: 14px; color: var(--accent-fg); background: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); padding: 8px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
-  .af-btn:hover:not(:disabled) { filter: brightness(1.08); }
-  .af-btn:disabled { opacity: .55; cursor: default; }
-  .af-btn:focus-visible, .af-seg button:focus-visible, .af-field input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-  .af-spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
-  @media (prefers-reduced-motion: no-preference) { .af-spin { animation: af-rot .8s linear infinite; } }
-  @keyframes af-rot { to { transform: rotate(360deg); } }
-  .af-sync-msg { color: var(--muted); font-size: 13px; text-align: right; max-width: 22rem; margin: 0; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .pos { color: var(--ok); } .neg { color: var(--bad); }
+
+  /* Header */
+  .af-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+  .af-title { font-family: var(--font-num); font-weight: 600; font-size: clamp(1.5rem, 4vw, 1.9rem); letter-spacing: -0.01em; }
+  .af-sync { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+  .af-sync-msg { font-size: 12.5px; color: var(--muted); text-align: right; max-width: 18rem; }
   .af-sync-msg.is-bad { color: var(--bad); }
-  .af-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 16px; }
-  .af-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr)); gap: 12px; }
-  .af-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-  .af-card h2 { font-size: 17px; font-weight: 600; }
-  .af-card h3 { font-size: 15px; font-weight: 600; }
-  .af-note { color: var(--muted); font-size: 13px; margin: 0; max-width: 82ch; }
-  .af-tile { gap: 4px; padding: 14px 16px; }
-  .af-tile-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
-  .af-big { font-family: var(--font-num); font-size: 28px; font-variant-numeric: tabular-nums; line-height: 1.15; }
-  .af-pos { color: var(--ok); } .af-neg { color: var(--bad); }
-  .af-commentary { font-size: 16px; line-height: 1.6; max-width: 72ch; margin: 0; }
-  .af-reasons { font-size: 13px; color: var(--muted); margin: 0; }
-  .af-section-h { font-size: 19px; font-weight: 600; font-family: var(--font-num); }
-  .af-section { display: flex; flex-direction: column; gap: 12px; }
-  .af-tablewrap { overflow: auto; max-height: 34rem; }
-  .af-table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-  .af-table th { text-align: left; font-weight: 600; color: var(--muted); padding: 7px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); white-space: nowrap; font-size: 12.5px; }
-  .af-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  .af-table .num { text-align: right; white-space: nowrap; }
-  .af-table td.wrap { min-width: 15rem; }
-  .af-bar { display: inline-block; height: 8px; border-radius: 2px; background: var(--accent); opacity: .7; vertical-align: middle; margin-right: 6px; }
-  .af-tag { display: inline-block; padding: 0 7px; border-radius: 4px; border: 1px solid var(--line); font-size: 12px; white-space: nowrap; }
-  .af-seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-  .af-seg button { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 4px 11px; cursor: pointer; }
-  .af-seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .af-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
-  .af-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
-  .af-field input { font: inherit; font-size: 15px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); padding: 6px 10px; width: 9rem; max-width: 100%; font-variant-numeric: tabular-nums; }
-  .af-chart { position: relative; min-height: 270px; }
-  .af-chart svg { display: block; }
-  .af-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 9px; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .af-tip .d { color: var(--muted); }
-  .af-tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
-  .af-steps { margin: 0; padding-left: 1.2rem; line-height: 1.6; max-width: 78ch; }
-  .af-disclaimer { color: var(--muted); font-size: 12.5px; max-width: 86ch; margin: 0; }
-  .af-empty { color: var(--muted); font-size: 13px; margin: 0; }
-  .af-load-error { color: var(--bad); }
+
+  /* Buttons and inputs */
+  .btn { font: inherit; font-weight: 600; font-size: 15px; border-radius: var(--r-sm); padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.ghost { background: transparent; color: var(--accent); }
+  .btn.small { font-size: 13px; padding: 6px 12px; }
+  .btn:focus-visible, .link:focus-visible, input:focus-visible, summary:focus-visible, .seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .link { font: inherit; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; }
+  .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
+  @media (prefers-reduced-motion: no-preference) { .spin { animation: rot .8s linear infinite; } }
+  @keyframes rot { to { transform: rotate(360deg); } }
+  .money { display: flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); padding: 0 12px; min-width: 0; }
+  .money span { font-family: var(--font-num); font-size: 26px; color: var(--muted); }
+  .money input { font: inherit; font-family: var(--font-num); font-size: 28px; border: 0; background: transparent; color: var(--fg); padding: 8px 6px; width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
+  .money input:focus-visible { outline: none; }
+  .money:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  .field input { font: inherit; font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 10px; width: 8.5rem; max-width: 100%; font-variant-numeric: tabular-nums; }
+
+  /* Cards and tiles */
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card h2 { font-size: 18px; font-weight: 700; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 10px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tile .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .tile .val { font-family: var(--font-num); font-size: 26px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .tile .sub { font-size: 12.5px; color: var(--muted); }
+
+  /* Today */
+  .today { border-left: 4px solid var(--ok); }
+  .today.is-rebalance { border-left-color: var(--warn); background: linear-gradient(0deg, var(--panel), var(--panel)); }
+  .pill { align-self: flex-start; display: inline-flex; align-items: center; gap: .45em; padding: 3px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--accent-soft); color: var(--ok); }
+  .pill::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
+  .pill.is-rebalance { background: var(--warn-soft); color: var(--warn); }
+  .pill.is-wait { background: var(--sunk); color: var(--muted); }
+  .today .headline { font-size: 17px; font-weight: 600; }
+  .today .note { font-size: 15.5px; line-height: 1.6; max-width: 70ch; }
+
+  /* Invest */
+  .invest { border: 2px solid var(--accent); }
+  .invest-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .invest-row .money { flex: 1 1 12rem; }
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 10px; }
+  .pie-amt { border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--sunk); border-top: 4px solid var(--pa); }
+  .pie-amt.b { border-top-color: var(--pb); }
+  .pie-amt .val { font-family: var(--font-num); font-size: 30px; font-variant-numeric: tabular-nums; }
+  .buys { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); gap: 8px; }
+  .buy { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 11px; display: flex; flex-direction: column; gap: 1px; min-width: 0; background: var(--panel); }
+  .buy .tk { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
+  .buy .nm { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .buy .amt { font-family: var(--font-num); font-size: 19px; font-variant-numeric: tabular-nums; }
+  .buy.cash { background: var(--sunk); border-style: dashed; }
+  .steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+  #plan { display: flex; flex-direction: column; gap: 14px; }
+  .done { background: var(--accent-soft); color: var(--fg); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; }
+
+  /* Pies */
+  .pies { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 14px; }
+  .pie { border-top: 4px solid var(--pa); }
+  .pie.b { border-top-color: var(--pb); }
+  .pie-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .slices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); gap: 8px; }
+  .slice { border-radius: var(--r-sm); padding: 9px 11px; background: var(--sunk); display: flex; flex-direction: column; gap: 1px; min-width: 0; position: relative; }
+  .slice .tk { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
+  .slice .nm { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slice .pct { font-family: var(--font-num); font-size: 22px; font-variant-numeric: tabular-nums; }
+  .slice .chg { position: absolute; top: 8px; right: 8px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+  .slice.cash { background: transparent; border: 1px dashed var(--line); }
+
+  /* History */
+  .hist { display: flex; flex-direction: column; }
+  .hist-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .hist-row:last-child { border-bottom: 0; }
+
+  /* Details */
+  details.more { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
+  details.more > summary { cursor: pointer; padding: 14px 18px; font-weight: 700; font-size: 16px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  details.more > summary::-webkit-details-marker { display: none; }
+  details.more > summary::after { content: "+"; font-size: 20px; color: var(--muted); }
+  details.more[open] > summary::after { content: "–"; }
+  details.more > .body { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .tablewrap { overflow: auto; max-height: 30rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font-weight: 600; color: var(--muted); padding: 7px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); white-space: nowrap; font-size: 12.5px; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.r, th.r { text-align: right; white-space: nowrap; }
+  td.wrap { min-width: 15rem; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .seg button { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 11px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .chart { position: relative; min-height: 260px; }
+  .chart svg { display: block; }
+  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 9px; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tip .d { color: var(--muted); }
+  .tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+  .disclaimer { color: var(--muted); font-size: 12.5px; max-width: 86ch; }
 </style>
 
 <div class="af">
-  <header class="af-head" id="top">
-    <div class="af-head-main">
-      <h1 class="af-title">Active Equity Fund</h1>
-      <div class="af-status">
-        <span class="af-pill is-wait" id="action-pill">Loading</span>
-        <span class="af-meta">Pie A: <b id="a-action">—</b> · Pie B: <b id="b-action">—</b> · closing prices of <span id="data-date">—</span></span>
-      </div>
-      <p class="af-sub" id="headline">Loading the latest run…</p>
-    </div>
+  <header class="af-head">
+    <h1 class="af-title">Active Equity Fund</h1>
     <div class="af-sync">
-      <button type="button" class="af-btn" id="sync-btn" disabled><span class="af-spin" id="sync-spin" hidden></span><span id="sync-label">Sync now</span></button>
-      <p class="af-sync-msg" id="sync-msg">Syncs automatically at 10:00 UK on weekdays.</p>
+      <span class="af-sync-msg" id="sync-msg">Updates automatically every weekday.</span>
+      <button type="button" class="btn small" id="sync-btn" disabled><span class="spin" id="sync-spin" hidden></span><span id="sync-label">Sync now</span></button>
     </div>
   </header>
 
-  <section class="af-card" id="today">
-    <h2>Today’s note</h2>
-    <p class="af-commentary" id="note">—</p>
-    <p class="af-reasons">Rule output: <span id="reasons">—</span></p>
+  <!-- Your money -->
+  <section class="tiles" id="money-tiles" aria-label="Your money">
+    <div class="tile"><span class="lbl">Invested</span><span class="val" id="m-invested">£0.00</span><span class="sub" id="m-count">Nothing yet</span></div>
+    <div class="tile"><span class="lbl">Worth now</span><span class="val" id="m-value">—</span><span class="sub">Estimated from the model</span></div>
+    <div class="tile"><span class="lbl">Gain</span><span class="val" id="m-gain">—</span><span class="sub" id="m-gain-pct">—</span></div>
+    <div class="tile"><span class="lbl">Vs All-World</span><span class="val" id="m-vs">—</span><span class="sub">Same money in VWRP</span></div>
   </section>
 
-  <section class="af-tiles" id="scorecard">
-    <div class="af-card af-tile"><span class="af-tile-label">Whole fund vs index</span><span class="af-big" id="t-total-ex">—</span><span class="af-meta">Fund <span id="t-total-ret">—</span> since <span id="t-inception">—</span></span></div>
-    <div class="af-card af-tile"><span class="af-tile-label">Pie A vs index</span><span class="af-big" id="t-a-ex">—</span><span class="af-meta">Goal: +2 points a year</span></div>
-    <div class="af-card af-tile"><span class="af-tile-label">Pie B vs index</span><span class="af-big" id="t-b-ex">—</span><span class="af-meta">Goal: maximum long-term return</span></div>
-    <div class="af-card af-tile"><span class="af-tile-label">FTSE All-World</span><span class="af-big" id="t-bench">—</span><span class="af-meta">VWRP, in GBP</span></div>
-    <div class="af-card af-tile"><span class="af-tile-label">Pie A share</span><span class="af-big" id="t-share">—</span><span class="af-meta">Back to 50/50 at 45 or 55</span></div>
-    <div class="af-card af-tile"><span class="af-tile-label">Market warnings</span><span class="af-big" id="t-risk">—</span><span class="af-meta">Pie B in cash: <span id="t-bcash">—</span></span></div>
+  <!-- Today -->
+  <section class="card today" id="today">
+    <span class="pill is-wait" id="pill">Loading</span>
+    <p class="headline" id="headline">Loading the latest run…</p>
+    <p class="note" id="note"></p>
+    <p class="small muted">Based on closing prices of <span id="data-date">—</span>. <button type="button" class="link" id="why-btn" aria-expanded="false">Show the rule output</button></p>
+    <p class="small muted" id="reasons" hidden></p>
   </section>
 
-  <section class="af-card" id="allocation">
-    <h2>Allocation and trades</h2>
-    <div class="af-seg" role="group" aria-label="Show allocation for">
-      <button type="button" class="af-view" data-view="Fund" aria-pressed="true">Whole fund</button>
-      <button type="button" class="af-view" data-view="A" aria-pressed="false">Pie A · Index +2%</button>
-      <button type="button" class="af-view" data-view="B" aria-pressed="false">Pie B · Stock selection</button>
+  <!-- Invest cash -->
+  <section class="card invest" id="invest">
+    <h2>Invest new cash</h2>
+    <div class="invest-row">
+      <label class="money" for="amt"><span>£</span><input id="amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" aria-label="Amount to invest in pounds"></label>
+      <button type="button" class="btn" id="plan-btn">Show me where</button>
     </div>
-    <p class="af-note">Target is the share of the selected view. Pie slice is what to type into Trading 212: pies can’t hold cash, so any cash target stays uninvested outside the pie. “Now” is where the model has drifted since the last rebalance. The whole fund counts stocks held in both pies once.</p>
-    <div class="af-tablewrap">
-      <table class="af-table">
-        <thead><tr><th>Holding</th><th>Name</th><th>Group</th><th class="num">Target</th><th class="num">Pie slice</th><th class="num">Now</th><th class="num">Today’s trade</th></tr></thead>
-        <tbody id="holdings-body"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="af-grid">
-    <div class="af-card" id="lump-sum">
-      <h2>Adding a lump sum</h2>
-      <p class="af-note">Enter what each pie is worth now and what you’re adding. Money goes first to whichever pie is below 50%, then to the holdings furthest below target, so nothing needs selling.</p>
-      <div class="af-form">
-        <label class="af-field" for="af-va">Pie A now (£)<input id="af-va" type="number" min="0" step="50" value="0" inputmode="decimal"></label>
-        <label class="af-field" for="af-vb">Pie B now (£)<input id="af-vb" type="number" min="0" step="50" value="0" inputmode="decimal"></label>
-        <label class="af-field" for="af-add">Adding (£)<input id="af-add" type="number" min="0" step="50" value="1000" inputmode="decimal"></label>
+    <details id="actual-values">
+      <summary class="small muted" style="cursor:pointer">My pies are worth something different in Trading 212</summary>
+      <div class="invest-row" style="margin-top:10px">
+        <label class="field" for="va">Pie A value (£)<input id="va" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        <label class="field" for="vb">Pie B value (£)<input id="vb" type="number" inputmode="decimal" min="0" step="0.01"></label>
       </div>
-      <div class="af-tablewrap">
-        <table class="af-table">
-          <thead><tr><th>Holding</th><th class="num">Pie slice</th><th class="num">Buy</th></tr></thead>
-          <tbody id="lump-body"></tbody>
-        </table>
+      <p class="small muted" style="margin-top:6px">Leave blank to use the dashboard’s estimate from what you’ve recorded.</p>
+    </details>
+    <div id="plan" hidden>
+      <div class="split" id="plan-split"></div>
+      <ol class="steps small" id="plan-steps"></ol>
+      <h3 style="font-size:15px">What each pie should buy</h3>
+      <div id="plan-buys" style="display:flex;flex-direction:column;gap:12px"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <button type="button" class="btn" id="record-btn">I’ve invested this</button>
+        <span class="small muted" id="record-note">Saves it here so the dashboard can track your money.</span>
       </div>
     </div>
-    <div class="af-card" id="stats">
-      <h2>Live statistics</h2>
-      <p class="af-note">Since the fund started, after estimated trading costs. Volatility appears after 20 trading days.</p>
-      <div class="af-tablewrap">
-        <table class="af-table">
-          <thead><tr><th>Portfolio</th><th class="num">Return</th><th class="num">Vs index</th><th class="num">Volatility</th><th class="num">Worst fall</th><th class="num">Holdings</th></tr></thead>
-          <tbody id="stats-body"></tbody>
-        </table>
+    <p class="done" id="record-done" hidden></p>
+  </section>
+
+  <!-- Pies -->
+  <section class="pies" id="pies">
+    <div class="card pie" id="pie-a">
+      <div class="pie-head"><h2>Pie A · Index +2%</h2><span class="small muted" id="pa-sub">—</span></div>
+      <p class="small muted">Goal: beat the FTSE All-World by 2% a year. VWRP at the core, tilted towards the strongest styles, regions and stocks.</p>
+      <div class="slices" id="pa-slices"></div>
+    </div>
+    <div class="card pie b" id="pie-b">
+      <div class="pie-head"><h2>Pie B · Stock selection</h2><span class="small muted" id="pb-sub">—</span></div>
+      <p class="small muted">Goal: maximum long-term return. Around 12 stocks with the strongest steady trends, smaller sizes for the riskier ones.</p>
+      <div class="slices" id="pb-slices"></div>
+    </div>
+  </section>
+
+  <section class="card" id="history" hidden>
+    <h2>What you’ve put in</h2>
+    <div class="hist" id="hist"></div>
+  </section>
+
+  <!-- Detail -->
+  <details class="more" id="perf">
+    <summary>Performance</summary>
+    <div class="body">
+      <p class="small muted">Growth of 100 for each pie, the whole fund and the All-World index since the fund started, after estimated trading costs.</p>
+      <div class="chart" id="nav-chart"></div>
+      <div class="tablewrap"><table><thead><tr><th>Portfolio</th><th class="r">Return</th><th class="r">Vs index</th><th class="r">Volatility</th><th class="r">Worst fall</th></tr></thead><tbody id="stats-body"></tbody></table></div>
+    </div>
+  </details>
+
+  <details class="more" id="log">
+    <summary>Decision log</summary>
+    <div class="body">
+      <div class="tablewrap"><table><thead><tr><th>Date</th><th>Decision</th><th>Pie A</th><th>Pie B</th><th>Trades (whole fund)</th><th>Note</th></tr></thead><tbody id="log-body"></tbody></table></div>
+    </div>
+  </details>
+
+  <details class="more" id="signals">
+    <summary>Signals behind the picks</summary>
+    <div class="body">
+      <p class="small muted">Momentum blends 12-month and 6-month returns; pie A’s styles are measured against the All-World index. Trend is the gap to the 200-day average. New picks need both above zero.</p>
+      <div class="seg" role="group" aria-label="Show signals for">
+        <button type="button" class="sig" data-sig="A" aria-pressed="false">Pie A</button>
+        <button type="button" class="sig" data-sig="B" aria-pressed="true">Pie B</button>
       </div>
+      <div class="tablewrap"><table><thead><tr><th>Group</th><th>Name</th><th class="r">Rank</th><th class="r">Momentum</th><th class="r">Trend</th><th class="r">12m return</th><th>Status</th></tr></thead><tbody id="signals-body"></tbody></table></div>
     </div>
-  </section>
+  </details>
 
-  <section class="af-card" id="performance">
-    <h2>Growth of 100 since the start</h2>
-    <p class="af-note">Each pie on its own, the whole fund, and the All-World index.</p>
-    <div class="af-chart" id="nav-chart"></div>
-  </section>
+  <details class="more" id="backtest">
+    <summary>Backtest 2016–2026</summary>
+    <div class="body">
+      <p class="small muted">The same rules on past prices, after costs. “As built” uses today’s stock lists, chosen knowing how the decade went, so treat it as an upper bound. The fair test picks stocks only from the 30 largest companies of 2015. Expect the truth in between.</p>
+      <div class="chart" id="bt-chart"></div>
+      <div class="tablewrap"><table><thead><tr><th>Version</th><th>Measure</th><th class="r">Value</th></tr></thead><tbody id="bt-body"></tbody></table></div>
+    </div>
+  </details>
 
-  <section class="af-card" id="log">
-    <h2>Decision log</h2>
-    <p class="af-note">Every check, newest first. Trades are in points of the whole fund.</p>
-    <div class="af-tablewrap">
-      <table class="af-table">
-        <thead><tr><th>Date</th><th>Decision</th><th>Pie A</th><th>Pie B</th><th>Whole-fund trades</th><th>Note</th><th>Rule output</th></tr></thead>
-        <tbody id="log-body"></tbody>
-      </table>
+  <details class="more" id="method">
+    <summary>How it works</summary>
+    <div class="body">
+      <div class="tablewrap"><table><thead><tr><th>Part</th><th class="r">Weight</th><th>Holds</th><th>Rule</th></tr></thead><tbody id="mandate-body"></tbody></table></div>
+      <ol class="steps">
+        <li>Every weekday the model re-scores both pies on the latest closing prices: at 22:35 UK after the US close, and again at 10:00 UK to catch anything missed. Sync now runs it straight away.</li>
+        <li>It only suggests trades when they matter: a holding enters or leaves, market risk changes, or a slice drifts well off target. After a rebalance pie A waits 10 trading days and pie B 20.</li>
+        <li>New cash goes to whichever pie and slices are furthest below target, so you rarely need to sell.</li>
+        <li>Money moves between the pies only when one reaches 45% or 55% of the fund.</li>
+      </ol>
+      <p class="disclaimer">A rules-based model, not regulated financial advice. Past and backtested returns don’t guarantee future ones. “Worth now” is an estimate from the model’s own prices and assumes you follow its trades; your Trading 212 balance is the real number.</p>
     </div>
-  </section>
-
-  <section class="af-card" id="signals">
-    <h2>Signals behind the picks</h2>
-    <p class="af-note">Pie A momentum blends the 12-month (skipping the latest month) and 6-month return; styles are measured against the All-World index. Pie B shows its top 40 by score with 12-month momentum. Trend is the gap to the 200-day average.</p>
-    <div class="af-seg" role="group" aria-label="Show signals for">
-      <button type="button" class="af-sig" data-sig="A" aria-pressed="false">Pie A</button>
-      <button type="button" class="af-sig" data-sig="B" aria-pressed="true">Pie B</button>
-    </div>
-    <div class="af-tablewrap">
-      <table class="af-table">
-        <thead><tr><th>Group</th><th>Name</th><th class="num">Rank</th><th class="num">Momentum</th><th class="num">Trend</th><th class="num">12m return</th><th>Status</th></tr></thead>
-        <tbody id="signals-body"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <section class="af-section" id="backtest">
-    <h2 class="af-section-h">Backtest: the same rules on 2016–2026 prices</h2>
-    <p class="af-sub">After trading costs. “As built” uses today’s stock lists, chosen knowing how the decade went, so treat it as an upper bound. The fair test picks stocks only from the 30 largest companies at the end of 2015, laggards included. Expect the truth in between.</p>
-    <div class="af-grid">
-      <div class="af-card"><h3>Growth of 100</h3><div class="af-chart" id="bt-chart"></div></div>
-      <div class="af-card"><h3>Results</h3>
-        <div class="af-tablewrap">
-          <table class="af-table">
-            <thead><tr><th>Version</th><th>Measure</th><th class="num">Value</th></tr></thead>
-            <tbody id="bt-body"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="af-card" id="method">
-    <h2>How the fund is built</h2>
-    <p class="af-note">Half the fund in each pie. Weights are % of that pie.</p>
-    <div class="af-tablewrap">
-      <table class="af-table">
-        <thead><tr><th>Part</th><th class="num">Weight</th><th>Holds</th><th>Rule</th></tr></thead>
-        <tbody id="mandate-body"></tbody>
-      </table>
-    </div>
-    <h3>When it trades</h3>
-    <ol class="af-steps">
-      <li>Every weekday at 10:00 UK, and whenever you press Sync now, the model re-scores both pies on the latest completed closing prices.</li>
-      <li>Pie A suggests a rebalance when a holding enters or leaves, the market warning level changes, or a position drifts at least 3 points and a quarter of its size. It then waits 10 trading days unless market risk rises.</li>
-      <li>Pie B trades less often because small caps swing more: a position must drift at least half its size, and it waits 20 trading days between rebalances.</li>
-      <li>Money moves between the pies only when one reaches 45% or 55% of the fund.</li>
-      <li>Pie B skips stocks with an agreed takeover, spotted by a price pinned near the offer and collapsed volatility.</li>
-    </ol>
-    <p class="af-disclaimer">A rules-based model, not regulated financial advice. Past and backtested returns do not guarantee future ones. Pie B can fall further than the index in a crash, and with 12 stocks one company can move it by several points. Costs assumed: 0.10% per ETF trade, 0.25% for US and European stocks (includes Trading 212’s 0.15% currency fee), 0.5% stamp duty on UK share purchases, and an extra 0.15% spread on pie B trades.</p>
-  </section>
+  </details>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const S = { data: null, view: 'Fund', sig: 'B' };
-
-  // ---- Sync state: the button starts the fund's scheduled run now, through the viewer's Claude Code Remote connector.
-  const SERVER = 'Claude Code Remote';
-  const TRIGGER = 'trig_01PC31FgzjK37vrhh5kAgWyL';
-  const KEY = 'af-sync-started';
-  const btn = $('sync-btn'), msg = $('sync-msg'), spin = $('sync-spin'), label = $('sync-label');
-  let mcp = null, pollTimer = null;
-  const say = (text, bad) => { msg.textContent = text; msg.classList.toggle('is-bad', !!bad); };
-  const busy = (on, text) => { btn.disabled = on || !mcp; spin.hidden = !on; label.textContent = text || 'Sync now'; };
-  const readStarted = () => { try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } };
-  const writeStarted = (t) => { try { localStorage.setItem(KEY, String(t)); } catch (e) { /* storage blocked */ } };
-  const defaultMsg = () => 'Last synced ' + (S.data && S.data.generated ? fmtTime(new Date(S.data.generated)) : '—') + '. Syncs automatically at 10:00 UK on weekdays.';
+  const S = { data: null, contribs: [], sig: 'B', plan: null, db: null };
+  const gbp = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : '£' + d3.format(',.2f')(v));
+  const sgbp = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : (v >= 0 ? '+£' : '−£') + d3.format(',.2f')(Math.abs(v)));
   const pct1 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : d3.format('+.1%')(Number(v)));
   const p1 = (v) => (v === null || v === undefined ? '—' : d3.format('.1%')(Number(v)));
-  const f1 = d3.format('.1f');
   const fmtDate = (s) => (s ? d3.utcFormat('%-d %b %Y')(new Date(String(s).slice(0, 10) + 'T00:00:00Z')) : '—');
   const fmtTime = (d) => d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
-  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const actionWord = { REBALANCE: 'Rebalance', HOLD: 'Hold', NO_NEW_DATA: 'No new prices', NO_DATA: 'No data' };
-  const headlines = {
-    REBALANCE: 'Rebalance today. Trades are worked out on the whole fund; switch to Pie A or Pie B below for the slices to set in each Trading 212 pie, then press Rebalance in that pie.',
-    HOLD: 'No trades today. Both pies are within tolerance of their targets.',
-    NO_NEW_DATA: 'No new closing prices since the last check (weekend or market holiday). No trades.',
-    no_data: 'Market data could not be downloaded on the last run, so nothing changed. Keep both pies as they are.',
-  };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const cell = (tr, text, cls) => { const td = el('td', cls, text); tr.appendChild(td); return td; };
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const word = { REBALANCE: 'Rebalance', HOLD: 'Hold', NO_NEW_DATA: 'No new prices', NO_DATA: 'No data' };
 
-  function signedTile(id, v, colour) {
-    const el = $(id);
-    el.textContent = pct1(v);
-    el.classList.toggle('af-pos', !!colour && v > 0.0005);
-    el.classList.toggle('af-neg', !!colour && v < -0.0005);
+  // ---------- money: contributions grown with each pie's index ----------
+  function navAt(date) {
+    const nav = S.data ? S.data.nav : [];
+    let row = nav[0];
+    for (const r of nav) { if (r.date <= date) row = r; else break; }
+    return row;
+  }
+  function holdingsValue() {
+    if (!S.data || !S.data.nav.length) return null;
+    const now = S.data.nav[S.data.nav.length - 1];
+    let a = 0, b = 0, bench = 0, invested = 0;
+    for (const c of S.contribs) {
+      const at = navAt(c.basis_date) || now;
+      a += (c.a || 0) * now.a / at.a;
+      b += (c.b || 0) * now.b / at.b;
+      bench += (c.amount || 0) * now.bench / at.bench;
+      invested += c.amount || 0;
+    }
+    return { a, b, total: a + b, bench, invested };
+  }
+  function renderMoney() {
+    const v = holdingsValue();
+    const n = S.contribs.length;
+    $('m-invested').textContent = gbp(v ? v.invested : 0);
+    $('m-count').textContent = n ? `${n} payment${n > 1 ? 's' : ''}` : 'Nothing yet';
+    if (!v || !n) { ['m-value', 'm-gain', 'm-vs'].forEach((id) => { $(id).textContent = '—'; $(id).className = 'val'; }); $('m-gain-pct').textContent = 'Starts once you invest'; return; }
+    $('m-value').textContent = gbp(v.total);
+    const g = v.total - v.invested, vs = v.total - v.bench;
+    $('m-gain').textContent = sgbp(g); $('m-gain').className = 'val ' + (g > 0.005 ? 'pos' : g < -0.005 ? 'neg' : '');
+    $('m-gain-pct').textContent = v.invested ? pct1(g / v.invested) : '—';
+    $('m-vs').textContent = sgbp(vs); $('m-vs').className = 'val ' + (vs > 0.005 ? 'pos' : vs < -0.005 ? 'neg' : '');
+    $('va').placeholder = d3.format('.2f')(v.a); $('vb').placeholder = d3.format('.2f')(v.b);
   }
 
-  function renderHeader(D) {
-    const r = D.summary[0];
-    const pill = $('action-pill');
-    pill.className = 'af-pill ' + ({ REBALANCE: 'is-rebalance', HOLD: 'is-hold', NO_DATA: 'is-bad' }[r.action] || 'is-wait');
-    pill.textContent = r.action === 'REBALANCE' ? 'Rebalance today' : (actionWord[r.action] || r.action);
-    $('a-action').textContent = (actionWord[r.a_action] || '—').toLowerCase();
-    $('b-action').textContent = (actionWord[r.b_action] || '—').toLowerCase();
+  // ---------- today ----------
+  function renderToday() {
+    const r = S.data.summary[0];
+    const reb = r.action === 'REBALANCE';
+    const first = !S.contribs.length;
+    $('today').classList.toggle('is-rebalance', reb && !first);
+    $('pill').className = 'pill' + (reb && !first ? ' is-rebalance' : r.status !== 'ok' ? ' is-wait' : '');
+    $('pill').textContent = first ? 'Ready to start' : reb ? 'Rebalance today' : r.status !== 'ok' ? 'No update' : 'Hold';
+    $('headline').textContent = first
+      ? 'Set up your two pies with the slices below, then invest your first cash.'
+      : reb
+        ? 'Update the slices marked “changed” in your pies, then press Rebalance in each changed pie.'
+        : r.status !== 'ok' ? 'The last update couldn’t get prices, so nothing has changed.' : 'Nothing to trade. Keep investing new cash as below.';
+    $('note').textContent = r.note || '';
     $('data-date').textContent = fmtDate(r.data_date);
-    $('headline').textContent = headlines[r.status === 'ok' ? r.action : r.status] || '';
-    $('note').textContent = r.note || 'No note written for this run.';
-    $('reasons').textContent = r.reasons || 'none';
-    signedTile('t-total-ex', r.total_excess, true);
-    signedTile('t-a-ex', r.a_excess, true);
-    signedTile('t-b-ex', r.b_excess, true);
-    signedTile('t-total-ret', r.total_return, false);
-    signedTile('t-bench', r.bench_return, false);
-    $('t-inception').textContent = fmtDate(r.inception);
-    $('t-share').textContent = r.share_a === null ? '—' : f1(r.share_a) + '%';
-    $('t-risk').textContent = r.risk_level === null ? '—' : r.risk_level + ' of 2';
-    $('t-bcash').textContent = (r.b_cash ?? 0) + '%';
+    $('reasons').textContent = r.reasons || '';
   }
+  $('why-btn').addEventListener('click', () => {
+    const open = $('reasons').hidden;
+    $('reasons').hidden = !open;
+    $('why-btn').setAttribute('aria-expanded', String(open));
+    $('why-btn').textContent = open ? 'Hide the rule output' : 'Show the rule output';
+  });
 
-  function renderHoldings() {
-    const rows = S.data.holdings.filter((r) => r.pie === S.view);
-    const max = d3.max(rows, (r) => Number(r.target)) || 1;
-    $('holdings-body').replaceChildren(...rows.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, r.id); cell(tr, r.name); cell(tr, r.group);
-      const td = cell(tr, '', 'num');
-      const bar = document.createElement('span');
-      bar.className = 'af-bar';
-      bar.style.width = Math.max(2, (Number(r.target) / max) * 56) + 'px';
-      td.append(bar, document.createTextNode(r.target + '%'));
-      cell(tr, r.slice === null || r.slice === undefined ? 'outside pie' : r.slice + '%', 'num');
-      cell(tr, f1(Number(r.current)) + '%', 'num');
-      const t = Number(r.trade) || 0;
-      cell(tr, t ? (t > 0 ? 'Buy ' : 'Sell ') + f1(Math.abs(t)) + ' pts' : '—', 'num ' + (t > 0 ? 'af-pos' : t < 0 ? 'af-neg' : ''));
-      return tr;
+  // ---------- pies ----------
+  function renderPie(p, box, sub) {
+    const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0);
+    const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length;
+    const cash = rows.find((h) => h.id === 'CASH');
+    $(sub).textContent = `${rows.filter((h) => h.id !== 'CASH').length} slices` + (cash ? ` · ${cash.target}% cash` : '');
+    $(box).replaceChildren(...rows.map((h) => {
+      const t = el('div', 'slice' + (h.id === 'CASH' ? ' cash' : ''));
+      t.append(el('span', 'tk', h.id === 'CASH' ? 'CASH' : h.id), el('span', 'nm', h.id === 'CASH' ? 'Keep outside the pie' : h.name),
+        el('span', 'pct', (h.slice === null || h.slice === undefined ? h.target : h.slice) + '%'));
+      if (reb && Number(h.trade)) t.append(el('span', 'chg', 'changed'));
+      t.title = h.id === 'CASH' ? 'Cash share of this pie' : `${h.name}: slice ${h.slice}% (target ${h.target}% of the pie incl. cash)`;
+      return t;
     }));
   }
 
-  function renderLump() {
-    if (!S.data) return;
-    const n = (id) => Math.max(0, Number($(id).value) || 0);
-    const va = n('af-va'), vb = n('af-vb'), add = n('af-add');
-    const total = va + vb + add;
-    const want = { A: Math.max(0, total / 2 - va), B: Math.max(0, total / 2 - vb) };
-    const ws = want.A + want.B || 1;
-    const money = { A: add * want.A / ws, B: add * want.B / ws };
-    const gbp = d3.format(',.0f');
-    const out = [];
-    ['A', 'B'].forEach((p) => {
-      const rows = S.data.holdings.filter((r) => r.pie === p && Number(r.target) > 0 && r.slice !== null && r.slice !== undefined);
-      const v = p === 'A' ? va : vb;
-      const after = v + money[p];
-      const gaps = rows.map((r) => Math.max(0, (Number(r.slice) / 100) * after - v * Number(r.current) / 100));
-      const s = d3.sum(gaps) || 1;
-      rows.forEach((r, i) => out.push({ label: `Pie ${p} · ${r.id}`, slice: r.slice, buy: money[p] * gaps[i] / s }));
+  // ---------- invest plan ----------
+  function pieValues() {
+    const v = holdingsValue();
+    const read = (id, fallback) => { const x = Number($(id).value); return $(id).value !== '' && x >= 0 ? x : fallback; };
+    return { a: read('va', v ? v.a : 0), b: read('vb', v ? v.b : 0) };
+  }
+  function splitPennies(total, weights) {
+    // Split `total` in proportion to weights, rounded to pennies, summing exactly.
+    const s = d3.sum(weights) || 1;
+    const raw = weights.map((w) => (total * w) / s);
+    const pence = raw.map((x) => Math.floor(x * 100 + 1e-6));
+    let left = Math.round(total * 100) - d3.sum(pence);
+    const order = raw.map((x, i) => [x * 100 - pence[i], i]).sort((a, b) => b[0] - a[0]);
+    for (let k = 0; left > 0 && k < order.length; k++, left--) pence[order[k][1]]++;
+    return pence.map((p) => p / 100);
+  }
+  function makePlan(amount) {
+    const { a: va, b: vb } = pieValues();
+    const total = va + vb + amount;
+    const want = [Math.max(0, total / 2 - va), Math.max(0, total / 2 - vb)];
+    const [ma, mb] = splitPennies(amount, want[0] + want[1] > 0 ? want : [1, 1]);
+    const pies = [['A', va, ma], ['B', vb, mb]].map(([p, v, m]) => {
+      const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0);
+      const gaps = rows.map((h) => Math.max(0, (h.target / 100) * (v + m) - v * (Number(h.current) || 0) / 100));
+      const amts = splitPennies(m, d3.sum(gaps) > 0 ? gaps : rows.map((h) => h.target));
+      const items = rows.map((h, i) => ({ ...h, amt: amts[i] })).filter((x) => x.amt > 0).sort((x, y) => y.amt - x.amt);
+      const cash = items.filter((x) => x.id === 'CASH').reduce((s, x) => s + x.amt, 0);
+      return { p, v, m, intoPie: Math.round((m - cash) * 100) / 100, cash, items };
     });
-    $('lump-body').replaceChildren(...out.filter((o) => o.buy >= 0.5).map((o) => {
-      const tr = document.createElement('tr');
-      cell(tr, o.label); cell(tr, o.slice + '%', 'num'); cell(tr, '£' + gbp(o.buy), 'num');
-      return tr;
+    return { amount, pies };
+  }
+  function renderPlan() {
+    const amount = Math.round((Number($('amt').value) || 0) * 100) / 100;
+    $('record-done').hidden = true;
+    if (!S.data || amount <= 0) { $('plan').hidden = true; S.plan = null; return; }
+    const plan = makePlan(amount);
+    S.plan = plan;
+    $('plan').hidden = false;
+    $('plan-split').replaceChildren(...plan.pies.map((x) => {
+      const t = el('div', 'pie-amt' + (x.p === 'B' ? ' b' : ''));
+      t.append(el('span', 'small muted', x.p === 'A' ? 'Into Pie A · Index +2%' : 'Into Pie B · Stock selection'), el('span', 'val', gbp(x.intoPie)),
+        el('span', 'small muted', x.cash > 0 ? `plus keep ${gbp(x.cash)} as cash` : x.m === 0 ? 'This pie is already ahead; nothing needed' : `${x.items.length} slices`));
+      return t;
+    }));
+    const first = !S.contribs.length;
+    const steps = [];
+    if (first) steps.push('In Trading 212 (Invest or ISA account), create two pies and add the slices exactly as shown under “Pie A” and “Pie B” below.');
+    plan.pies.forEach((x) => { if (x.intoPie > 0) steps.push(`Open Pie ${x.p}, tap Invest and enter ${gbp(x.intoPie)}. Trading 212 spreads it across the slices; it should buy roughly what’s listed below.`); });
+    if (plan.pies.some((x) => x.cash > 0)) steps.push('Leave the cash amount uninvested in your account. It earns interest and the model uses it when markets recover.');
+    steps.push('Come back and press “I’ve invested this” so the dashboard can track your money.');
+    $('plan-steps').replaceChildren(...steps.map((s) => el('li', null, s)));
+    $('plan-buys').replaceChildren(...plan.pies.filter((x) => x.items.length).map((x) => {
+      const wrap = el('div');
+      wrap.append(el('p', 'small muted', x.p === 'A' ? 'Pie A' : 'Pie B'));
+      const g = el('div', 'buys');
+      g.append(...x.items.map((h) => {
+        const t = el('div', 'buy' + (h.id === 'CASH' ? ' cash' : ''));
+        t.append(el('span', 'tk', h.id === 'CASH' ? 'CASH' : h.id), el('span', 'nm', h.id === 'CASH' ? 'Keep as cash' : h.name), el('span', 'amt', gbp(h.amt)));
+        return t;
+      }));
+      wrap.append(g);
+      return wrap;
+    }));
+    $('record-btn').textContent = `I’ve invested ${gbp(amount)}`;
+    $('record-btn').disabled = !S.db;
+    $('record-note').textContent = S.db ? 'Saves it here so the dashboard can track your money.' : 'Saving isn’t available in this view, but the split above is still right.';
+  }
+  $('plan-btn').addEventListener('click', renderPlan);
+  $('amt').addEventListener('keydown', (e) => { if (e.key === 'Enter') renderPlan(); });
+  ['va', 'vb'].forEach((id) => $(id).addEventListener('input', () => { if (S.plan) renderPlan(); }));
+
+  $('record-btn').addEventListener('click', async () => {
+    if (!S.db || !S.plan) return;
+    const plan = S.plan;
+    $('record-btn').disabled = true;
+    try {
+      await S.db.collection('contributions').add({
+        at: new Date().toISOString(), basis_date: S.data.summary[0].data_date,
+        amount: plan.amount, a: plan.pies[0].m, b: plan.pies[1].m,
+      });
+      $('plan').hidden = true; $('amt').value = ''; S.plan = null;
+      $('record-done').hidden = false;
+      $('record-done').textContent = `Saved: ${gbp(plan.amount)} invested (${gbp(plan.pies[0].m)} Pie A, ${gbp(plan.pies[1].m)} Pie B).`;
+    } catch (e) {
+      $('record-btn').disabled = false;
+      $('record-note').textContent = 'Couldn’t save that. Check your connection and try again.';
+    }
+  });
+
+  // ---------- history ----------
+  function renderHistory() {
+    $('history').hidden = !S.contribs.length;
+    $('hist').replaceChildren(...S.contribs.slice().reverse().map((c) => {
+      const row = el('div', 'hist-row');
+      const left = el('div');
+      left.append(el('div', null, gbp(c.amount)), el('div', 'small muted', `${fmtTime(new Date(c.at))} · A ${gbp(c.a)} · B ${gbp(c.b)}`));
+      const del = el('button', 'link', 'Remove');
+      del.type = 'button';
+      del.addEventListener('click', async () => {
+        if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = 'Tap again to remove'; return; }
+        try { await S.db.collection('contributions').doc(c._id).delete(); } catch (e) { del.textContent = 'Couldn’t remove'; }
+      });
+      row.append(left, del);
+      return row;
     }));
   }
 
-  function renderStats(D) {
+  // ---------- detail sections ----------
+  function renderDetail() {
+    const D = S.data;
     $('stats-body').replaceChildren(...D.stats.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, r.portfolio);
-      cell(tr, pct1(r.return), 'num');
-      const vi = r.vs_index;
-      cell(tr, pct1(vi), 'num ' + (vi > 0.0005 ? 'af-pos' : vi < -0.0005 ? 'af-neg' : ''));
-      cell(tr, p1(r.volatility), 'num');
-      cell(tr, p1(r.max_drawdown), 'num');
-      cell(tr, r.holdings === null || r.holdings === undefined ? '—' : String(r.holdings), 'num');
-      return tr;
+      const tr = el('tr'); cell(tr, r.portfolio); cell(tr, pct1(r.return), 'r');
+      cell(tr, pct1(r.vs_index), 'r ' + (r.vs_index > 0.0005 ? 'pos' : r.vs_index < -0.0005 ? 'neg' : ''));
+      cell(tr, p1(r.volatility), 'r'); cell(tr, p1(r.max_drawdown), 'r'); return tr;
     }));
-  }
-
-  function renderLog(D) {
     $('log-body').replaceChildren(...D.log.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, fmtDate(r.run_date));
-      const td = cell(tr, '');
-      const tag = document.createElement('span');
-      tag.className = 'af-tag ' + (r.action === 'REBALANCE' ? 'is-rebalance' : r.action === 'HOLD' ? 'is-hold' : '');
-      tag.textContent = actionWord[r.action] || r.action;
-      td.appendChild(tag);
-      cell(tr, actionWord[r.a_action] || '—');
-      cell(tr, actionWord[r.b_action] || '—');
-      cell(tr, r.trades || '—', 'wrap');
-      cell(tr, r.note || '—', 'wrap');
-      cell(tr, r.reasons || '—', 'wrap');
-      return tr;
+      const tr = el('tr'); cell(tr, fmtDate(r.run_date)); cell(tr, word[r.action] || r.action);
+      cell(tr, word[r.a_action] || '—'); cell(tr, word[r.b_action] || '—'); cell(tr, r.trades || '—', 'wrap'); cell(tr, r.note || '—', 'wrap'); return tr;
     }));
+    const fmt = (r) => { const v = Number(r.value); if (/Vs All-World/.test(r.metric)) return d3.format('+.1%')(v); if (/Turnover|Tracking/.test(r.metric)) return d3.format('.0%')(v); return d3.format('.1%')(v); };
+    $('bt-body').replaceChildren(...D.bt_metrics.map((r) => { const tr = el('tr'); cell(tr, r.variant); cell(tr, r.metric); cell(tr, fmt(r), 'r'); return tr; }));
+    $('mandate-body').replaceChildren(...D.mandate.map((r) => {
+      const tr = el('tr'); cell(tr, r.sleeve); cell(tr, (/Defensive|Cash/.test(r.sleeve) ? 'up to ' : '') + r.weight + '%', 'r'); cell(tr, r.holds); cell(tr, r.rule, 'wrap'); return tr;
+    }));
+    renderSignals();
   }
-
   function renderSignals() {
     const rows = S.data.signals.filter((r) => String(r.key).startsWith(S.sig === 'A' ? 'A ' : 'B:'));
     $('signals-body').replaceChildren(...rows.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, r.group); cell(tr, r.name); cell(tr, String(r.rank), 'num');
-      cell(tr, pct1(r.momentum), 'num ' + (Number(r.momentum) >= 0 ? 'af-pos' : 'af-neg'));
-      cell(tr, pct1(r.trend), 'num ' + (Number(r.trend) >= 0 ? 'af-pos' : 'af-neg'));
-      cell(tr, pct1(r.return_12m), 'num');
-      cell(tr, r.status);
-      return tr;
+      const tr = el('tr'); cell(tr, r.group); cell(tr, r.name); cell(tr, String(r.rank), 'r');
+      cell(tr, pct1(r.momentum), 'r ' + (Number(r.momentum) >= 0 ? 'pos' : 'neg'));
+      cell(tr, pct1(r.trend), 'r ' + (Number(r.trend) >= 0 ? 'pos' : 'neg'));
+      cell(tr, pct1(r.return_12m), 'r'); cell(tr, r.status); return tr;
     }));
   }
+  document.querySelectorAll('.sig').forEach((b) => b.addEventListener('click', () => {
+    S.sig = b.dataset.sig;
+    document.querySelectorAll('.sig').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderSignals();
+  }));
 
-  function renderBacktest(D) {
-    const fmt = (r) => {
-      const v = Number(r.value);
-      if (/Vs All-World/.test(r.metric)) return d3.format('+.1%')(v);
-      if (/Turnover|Tracking/.test(r.metric)) return d3.format('.0%')(v);
-      return d3.format('.1%')(v);
-    };
-    $('bt-body').replaceChildren(...D.bt_metrics.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, r.variant); cell(tr, r.metric); cell(tr, fmt(r), 'num');
-      return tr;
-    }));
-    $('mandate-body').replaceChildren(...D.mandate.map((r) => {
-      const tr = document.createElement('tr');
-      cell(tr, r.sleeve);
-      cell(tr, /Defensive|Cash/.test(r.sleeve) ? 'up to ' + r.weight + '%' : r.weight + '%', 'num');
-      cell(tr, r.holds);
-      cell(tr, r.rule, 'wrap');
-      return tr;
-    }));
-  }
-
-  function lineChart(el, rows, series) {
-    el.replaceChildren();
-    if (!rows || rows.length < 2) {
-      const p = document.createElement('p'); p.className = 'af-empty';
-      p.textContent = 'The lines start once there are two days of prices.'; el.appendChild(p); return;
-    }
+  function lineChart(box, rows, series) {
+    box.replaceChildren();
+    if (!rows || rows.length < 2) { box.append(el('p', 'small muted', 'The lines start once there are two days of prices.')); return; }
     const data = rows.map((r) => ({ ...r, d: new Date(String(r.date).slice(0, 10) + 'T00:00:00Z') }));
-    const W = Math.max(280, el.clientWidth), H = 270;
-    const palette = [css('--c1'), css('--c2'), css('--c3')];
-    const colors = series.map((s, i) => (i === series.length - 1 ? css('--c-muted') : palette[i % 3]));
+    const W = Math.max(280, box.clientWidth), H = 260;
+    const palette = [css('--fg'), css('--pa'), css('--pb'), css('--c3')];
+    const colors = series.map((s, i) => (i === series.length - 1 ? css('--c-muted') : palette[i]));
     const vals = data.flatMap((r) => series.map((s) => r[s.key]).filter((v) => v !== null && v !== undefined));
     const y = d3.scaleLinear(d3.extent(vals), [H - 28, 10]).nice();
-    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
     const probe = svg.append('g').attr('font-size', 12);
     const yTicks = y.ticks(5);
     let left = 0, right = 0;
@@ -443,119 +534,118 @@
     ends.sort((a, b) => a.y - b.y);
     for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
     g.selectAll('text.end').data(ends).join('text').attr('x', W - right + 6).attr('y', (e) => e.y).attr('dy', '0.32em').attr('fill', css('--fg')).text((e) => e.text);
-    const tip = document.createElement('div'); tip.className = 'af-tip'; tip.hidden = true; el.appendChild(tip);
+    const tip = el('div', 'tip'); tip.hidden = true; box.appendChild(tip);
     const rule = g.append('line').attr('y1', 10).attr('y2', H - 28).attr('stroke', css('--line')).style('display', 'none');
     const bis = d3.bisector((r) => r.d).center;
     svg.on('pointermove', (ev) => {
       const [mx] = d3.pointer(ev);
       const r = data[bis(data, x.invert(mx))];
       rule.style('display', null).attr('x1', x(r.d)).attr('x2', x(r.d));
-      tip.replaceChildren();
-      const dEl = document.createElement('div'); dEl.className = 'd'; dEl.textContent = d3.utcFormat('%-d %b %Y')(r.d); tip.appendChild(dEl);
+      tip.replaceChildren(el('div', 'd', d3.utcFormat('%-d %b %Y')(r.d)));
       series.forEach((s, i) => {
         const v = r[s.key]; if (v === null || v === undefined) return;
-        const line = document.createElement('div');
-        const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = colors[i];
-        line.append(sw, document.createTextNode(`${s.label} ${d3.format('.1f')(v)}`));
-        tip.appendChild(line);
+        const line = el('div'); const sw = el('span', 'sw'); sw.style.background = colors[i];
+        line.append(sw, document.createTextNode(`${s.label} ${d3.format('.1f')(v)}`)); tip.appendChild(line);
       });
       tip.hidden = false;
-      const px = (x(r.d) / W) * el.clientWidth;
-      tip.style.left = Math.min(Math.max(0, px + 12), el.clientWidth - tip.offsetWidth) + 'px';
+      tip.style.left = Math.min(Math.max(0, (x(r.d) / W) * box.clientWidth + 12), box.clientWidth - tip.offsetWidth) + 'px';
       tip.style.top = '8px';
     }).on('pointerleave', () => { tip.hidden = true; rule.style('display', 'none'); });
   }
-
   function renderCharts() {
     if (!S.data) return;
-    lineChart($('nav-chart'), S.data.nav, [{ key: 'total', label: 'Fund' }, { key: 'a', label: 'Pie A' }, { key: 'b', label: 'Pie B' }, { key: 'bench', label: 'All-World' }]);
-    lineChart($('bt-chart'), S.data.bt_curve, [{ key: 'total', label: 'Fund as built' }, { key: 'total_fair', label: 'Fund fair test' }, { key: 'b', label: 'Pie B as built' }, { key: 'bench', label: 'All-World' }]);
+    if ($('perf').open) lineChart($('nav-chart'), S.data.nav, [{ key: 'total', label: 'Fund' }, { key: 'a', label: 'Pie A' }, { key: 'b', label: 'Pie B' }, { key: 'bench', label: 'All-World' }]);
+    if ($('backtest').open) lineChart($('bt-chart'), S.data.bt_curve, [{ key: 'total', label: 'Fund as built' }, { key: 'total_fair', label: 'Fund fair test' }, { key: 'b', label: 'Pie B as built' }, { key: 'bench', label: 'All-World' }]);
+  }
+  ['perf', 'backtest'].forEach((id) => $(id).addEventListener('toggle', renderCharts));
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderCharts, 150); });
+
+  function renderAll() {
+    if (!S.data) return;
+    renderMoney(); renderToday(); renderPie('A', 'pa-slices', 'pa-sub'); renderPie('B', 'pb-slices', 'pb-sub'); renderHistory();
+    if (!S.contribs.length && !$('amt').value) $('amt').placeholder = '165.44';
+    if (S.plan) renderPlan();
   }
 
-  document.querySelectorAll('.af-view').forEach((b) => b.addEventListener('click', () => {
-    S.view = b.dataset.view;
-    document.querySelectorAll('.af-view').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    renderHoldings();
-  }));
-  document.querySelectorAll('.af-sig').forEach((b) => b.addEventListener('click', () => {
-    S.sig = b.dataset.sig;
-    document.querySelectorAll('.af-sig').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    renderSignals();
-  }));
-  ['af-va', 'af-vb', 'af-add'].forEach((id) => $(id).addEventListener('input', renderLump));
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderCharts, 150); });
-  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderCharts); } catch (e) { /* older browsers */ }
-
+  // ---------- load ----------
   fetch('data.json', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((D) => {
     S.data = D;
-    // A finished sync republishes the page; clear the "syncing" state it left behind.
     const started = readStarted();
     if (started && Date.parse(D.generated) > started) { writeStarted(0); clearTimeout(pollTimer); if (mcp) busy(false); }
     if (!readStarted()) say(defaultMsg());
-    renderHeader(D); renderHoldings(); renderLump(); renderStats(D); renderLog(D); renderSignals(); renderBacktest(D); renderCharts();
+    renderAll(); renderDetail(); renderCharts();
   }).catch(() => {
-    $('headline').textContent = 'The latest data could not be loaded. Reload the page, or press Sync now to rebuild it.';
-    $('headline').classList.add('af-load-error');
+    $('headline').textContent = 'The latest data couldn’t be loaded. Reload the page, or press Sync now to rebuild it.';
+    $('pill').textContent = 'Error'; $('pill').className = 'pill is-wait';
   });
 
+  const api = window.claude;
+  const useCap = (name) => (api && typeof api.use === 'function' ? api.use(name) : Promise.resolve(null));
+  useCap('db').then((db) => {
+    S.db = db;
+    if (!db) { if (S.plan) renderPlan(); return; }
+    db.collection('contributions').orderBy('at').onSnapshot((snap) => {
+      S.contribs = snap.docs.map((d) => ({ ...d.data(), _id: d.id }));
+      renderAll();
+      // First visit with nothing invested yet: start from the opening amount.
+      if (!snap.metadata.fromCache && snap.empty && !S.prefilled && !$('amt').value) {
+        S.prefilled = true; $('amt').value = '165.44'; renderPlan();
+      }
+    }, () => { /* store unavailable: the calculator still works */ });
+    if (S.plan) renderPlan();
+  }).catch(() => {});
 
+  // ---------- sync ----------
+  const SERVER = 'Claude Code Remote';
+  const TRIGGER = 'trig_01PC31FgzjK37vrhh5kAgWyL';
+  const KEY = 'af-sync-started';
+  const btn = $('sync-btn'), msg = $('sync-msg'), spin = $('sync-spin'), label = $('sync-label');
+  let mcp = null, pollTimer = null;
+  const say = (text, bad) => { msg.textContent = text; msg.classList.toggle('is-bad', !!bad); };
+  const busy = (on, text) => { btn.disabled = on || !mcp; spin.hidden = !on; label.textContent = text || 'Sync now'; };
+  function readStarted() { try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } }
+  function writeStarted(t) { try { localStorage.setItem(KEY, String(t)); } catch (e) { /* storage blocked */ } }
+  function defaultMsg() { return 'Updated ' + (S.data && S.data.generated ? fmtTime(new Date(S.data.generated)) : '—'); }
   const errorText = (e) => ({
-    server_not_connected: 'Sync needs the Claude Code Remote connector. Add it in claude.ai Settings → Connectors, then reload.',
-    needs_reauth: 'Reconnect Claude Code Remote in claude.ai Settings → Connectors, then try again.',
-    selection_required: 'Choose which Claude Code Remote connection to use when prompted, then try again.',
-    not_in_manifest: 'Sync isn’t allowed for this page. Allow Claude Code Remote in the page’s Permissions menu, then try again.',
+    server_not_connected: 'Sync needs the Claude Code Remote connector. Add it in claude.ai Settings → Connectors.',
+    needs_reauth: 'Reconnect Claude Code Remote in claude.ai Settings → Connectors.',
+    selection_required: 'Choose which Claude Code Remote connection to use, then try again.',
+    not_in_manifest: 'Sync isn’t allowed for this page. Allow Claude Code Remote in the page’s Permissions menu.',
     blocked_by_policy: 'Your organization’s policy blocks starting runs from this page.',
-    approval_required: 'Your organization requires approval for this action, which pages can’t ask for yet.',
-    consent_required: 'Sync needs your permission to use Claude Code Remote. Press Sync now again to allow it.',
-    tool_error: 'The run couldn’t be started: ' + (e && e.message ? e.message : 'the scheduled task refused.'),
-  }[e && e.code] || 'Couldn’t confirm the sync started. Check “Last synced” in a few minutes before trying again.');
-
+    consent_required: 'Sync needs your permission. Press Sync now again to allow it.',
+    tool_error: 'The update couldn’t start: ' + (e && e.message ? e.message : 'the scheduled task refused.'),
+  }[e && e.code] || 'Couldn’t confirm the update started. Check back in a few minutes before trying again.');
   async function poll(startedAt) {
     clearTimeout(pollTimer);
-    if (Date.now() - startedAt > 20 * 60 * 1000) { busy(false); say('The sync is taking longer than usual. The page updates itself when it finishes.'); return; }
+    if (Date.now() - startedAt > 20 * 60 * 1000) { busy(false); say('Taking longer than usual. The page updates itself when it’s done.'); return; }
     try {
       const res = await mcp.callTool(SERVER, 'get_trigger', { trigger_id: TRIGGER }, { cache: false });
       const run = res && res.payload && res.payload.trigger && res.payload.trigger.last_run;
-      const fired = run && Date.parse(run.fired_at);
-      if (run && fired >= startedAt - 60000 && run.finished_at) {
+      if (run && Date.parse(run.fired_at) >= startedAt - 60000 && run.finished_at) {
         busy(false);
-        if (/FAILED/.test(run.status || '')) say('The sync run failed. The page still shows the previous run.', true);
-        else say('Sync finished at ' + fmtTime(new Date(run.finished_at)) + '. The page reloads with the new numbers in a moment.');
+        if (/FAILED/.test(run.status || '')) say('The update failed. Showing the previous one.', true);
+        else say('Done. Reloading with the new numbers…');
         return;
       }
-    } catch (e) { /* keep waiting; the page also updates itself when the run publishes */ }
+    } catch (e) { /* keep waiting */ }
     pollTimer = setTimeout(() => poll(startedAt), 30000);
   }
-
   btn.addEventListener('click', async () => {
     if (!mcp) return;
     busy(true, 'Starting…');
     try {
       await mcp.callTool(SERVER, 'fire_trigger', { trigger_id: TRIGGER, text: 'Started from the dashboard Sync button.' }, { cache: false });
-      const t = Date.now();
-      writeStarted(t);
-      busy(true, 'Syncing…');
-      say('Sync started at ' + fmtTime(new Date(t)) + '. It takes about 5 minutes; this page updates itself when it’s done.');
+      const t = Date.now(); writeStarted(t);
+      busy(true, 'Updating…'); say('Takes about 5 minutes.');
       pollTimer = setTimeout(() => poll(t), 60000);
-    } catch (e) {
-      busy(false);
-      say(errorText(e), true);
-    }
+    } catch (e) { busy(false); say(errorText(e), true); }
   });
-
-  const claudeApi = window.claude;
-  const ready = claudeApi && typeof claudeApi.use === 'function' ? claudeApi.use('mcp') : Promise.resolve(null);
-  ready.then((m) => {
+  useCap('mcp').then((m) => {
     mcp = m;
     if (!mcp) { btn.disabled = true; btn.title = 'Open this page on claude.ai to sync'; return; }
     const started = readStarted();
-    if (Date.now() - started < 10 * 60 * 1000) {
-      busy(true, 'Syncing…');
-      say('Sync started at ' + fmtTime(new Date(started)) + '. This page updates itself when it’s done.');
-      pollTimer = setTimeout(() => poll(started), 15000);
-    } else {
-      busy(false);
-    }
+    if (Date.now() - started < 10 * 60 * 1000) { busy(true, 'Updating…'); say('Takes about 5 minutes.'); pollTimer = setTimeout(() => poll(started), 15000); }
+    else busy(false);
   }).catch(() => { btn.disabled = true; });
 })();
 </script>

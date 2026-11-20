@@ -63,7 +63,16 @@ a position is ≥3pp and ≥25% of its size off target, or total drift ≥8pp.
 - `dashboard/index.html` — the dashboard page (stored in the artifact)
 - `tests/` — logic tests on synthetic prices: `python -m pytest -q fund/tests`
 
-## Daily routine (what the 10:00 UK scheduled run and the Sync button do)
+## Daily routine (what the scheduled runs and the Sync button do)
+
+Runs at 22:35 UK on weekdays (after the US close, so the day's close is in),
+again at 09:35 UK to catch anything missed, and on demand from Sync now. A run
+only ever moves forward to a newer close; an older or unchanged close is a
+NO_NEW_DATA run that leaves the latest decision alone.
+
+The dashboard also stores the user's payments in its `contributions` collection
+(date, amount, split between the pies). Runs never touch it; the page uses it to
+show money invested, estimated value and where new cash should go.
 
 1. Get the code (read access is enough): `git fetch origin claude/active-equity-fund && git checkout claude/active-equity-fund && git pull origin claude/active-equity-fund`
 2. `pip install -q yfinance pandas numpy`

@@ -181,3 +181,46 @@ for _cell in _B.replace("\n", "|").split("|"):
     if _cell.strip():
         _t, _c, _s = _cell.split()
         B_STOCKS.append({"id": "B_" + _t, "ticker": _t, "name": _t.split(".")[0], "tickers": [_t], "ccy": _c, "sector": _s})
+
+# Company names for pie B's tickers, for the dashboard.
+B_NAMES = {
+    "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "Nvidia", "GOOGL": "Alphabet", "AMZN": "Amazon", "META": "Meta",
+    "AVGO": "Broadcom", "TSLA": "Tesla", "BRK-B": "Berkshire Hathaway", "JPM": "JPMorgan Chase", "V": "Visa",
+    "MA": "Mastercard", "LLY": "Eli Lilly", "UNH": "UnitedHealth", "XOM": "Exxon Mobil", "CVX": "Chevron",
+    "JNJ": "Johnson & Johnson", "PG": "Procter & Gamble", "KO": "Coca-Cola", "PEP": "PepsiCo", "WMT": "Walmart",
+    "COST": "Costco", "HD": "Home Depot", "MCD": "McDonald's", "NKE": "Nike", "DIS": "Disney", "NFLX": "Netflix",
+    "ADBE": "Adobe", "CRM": "Salesforce", "ORCL": "Oracle", "INTC": "Intel", "AMD": "AMD", "QCOM": "Qualcomm",
+    "TXN": "Texas Instruments", "IBM": "IBM", "CSCO": "Cisco", "BA": "Boeing", "CAT": "Caterpillar", "DE": "Deere",
+    "GE": "GE Aerospace", "HON": "Honeywell", "LMT": "Lockheed Martin", "RTX": "RTX", "UPS": "UPS", "PFE": "Pfizer",
+    "MRK": "Merck", "ABBV": "AbbVie", "TMO": "Thermo Fisher", "ISRG": "Intuitive Surgical", "GS": "Goldman Sachs",
+    "BAC": "Bank of America", "WFC": "Wells Fargo", "C": "Citigroup", "BLK": "BlackRock", "SPGI": "S&P Global",
+    "NEE": "NextEra Energy", "DUK": "Duke Energy", "T": "AT&T", "VZ": "Verizon", "SBUX": "Starbucks", "F": "Ford",
+    "GM": "General Motors", "PYPL": "PayPal", "MU": "Micron", "AXON": "Axon", "DECK": "Deckers", "ELF": "e.l.f. Beauty",
+    "CROX": "Crocs", "SMCI": "Super Micro Computer", "ENPH": "Enphase", "FSLR": "First Solar", "PLUG": "Plug Power",
+    "ROKU": "Roku", "ETSY": "Etsy", "PINS": "Pinterest", "SNAP": "Snap", "ZM": "Zoom", "DOCU": "DocuSign",
+    "PTON": "Peloton", "CVNA": "Carvana", "APP": "AppLovin", "PLTR": "Palantir", "CRWD": "CrowdStrike",
+    "DDOG": "Datadog", "NET": "Cloudflare", "SHOP": "Shopify", "MELI": "MercadoLibre", "SE": "Sea Ltd",
+    "TTD": "The Trade Desk", "HIMS": "Hims & Hers", "RKLB": "Rocket Lab", "AFRM": "Affirm", "UPST": "Upstart",
+    "SOFI": "SoFi", "WING": "Wingstop", "TXRH": "Texas Roadhouse", "LNTH": "Lantheus", "MEDP": "Medpace",
+    "FIX": "Comfort Systems", "EME": "EMCOR", "STRL": "Sterling Infrastructure", "POWL": "Powell Industries",
+    "CASY": "Casey's", "SAIA": "Saia", "ODFL": "Old Dominion Freight", "CELH": "Celsius", "ANF": "Abercrombie & Fitch",
+    "VRT": "Vertiv", "COIN": "Coinbase", "DKNG": "DraftKings", "ABNB": "Airbnb", "UBER": "Uber", "TSM": "TSMC",
+    "BABA": "Alibaba", "PDD": "PDD Holdings", "NU": "Nu Holdings", "BIDU": "Baidu", "INFY": "Infosys", "SONY": "Sony",
+    "TM": "Toyota", "NVO": "Novo Nordisk", "ASML.AS": "ASML", "SAP.DE": "SAP", "MC.PA": "LVMH", "RMS.PA": "Hermès",
+    "SU.PA": "Schneider Electric", "AIR.PA": "Airbus", "SIE.DE": "Siemens", "ALV.DE": "Allianz", "ADYEN.AS": "Adyen",
+    "RHM.DE": "Rheinmetall", "IFX.DE": "Infineon", "BNP.PA": "BNP Paribas", "VOW3.DE": "Volkswagen", "NESN.SW": "Nestlé",
+    "AZN.L": "AstraZeneca", "SHEL.L": "Shell", "HSBA.L": "HSBC", "ULVR.L": "Unilever", "RR.L": "Rolls-Royce",
+    "BA.L": "BAE Systems", "REL.L": "RELX", "LSEG.L": "London Stock Exchange Group", "BP.L": "BP", "GSK.L": "GSK",
+    "DGE.L": "Diageo", "BARC.L": "Barclays", "LLOY.L": "Lloyds", "VOD.L": "Vodafone", "TSCO.L": "Tesco",
+    "BT-A.L": "BT Group", "IAG.L": "IAG", "GAW.L": "Games Workshop", "JD.L": "JD Sports", "ASC.L": "ASOS",
+    "CCC.L": "Computacenter", "IGG.L": "IG Group", "OCDO.L": "Ocado",
+}
+for _s in B_STOCKS:
+    _s["name"] = B_NAMES.get(_s["ticker"], _s["name"])
+
+# Short names for pie A's funds, so dashboard tiles stay readable.
+SHORT_NAMES = {
+    "VWRP": "All-World (core)", "IWFV": "World Value", "IWFQ": "World Quality", "IWFM": "World Momentum",
+    "IWFS": "World Size", "VUAG": "S&P 500", "VERG": "Europe ex UK", "VUKG": "FTSE 100", "VJPN": "Japan",
+    "VFEG": "Emerging Markets", "VAPX": "Asia Pacific ex Japan", "SGLN": "Physical Gold",
+}

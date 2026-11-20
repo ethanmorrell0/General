@@ -81,7 +81,7 @@ def build() -> dict[str, list[dict]]:
         tr = lp.get(p, {}).get("trades", {}) if traded else {}
         for k in sorted(set(tgt) | set(tr), key=lambda k: -tgt.get(k, 0)):
             holdings.append({"key": f"{p}:{k}", "pie": p, "id": label_of(k[2:]) if k.startswith("B_") else k,
-                             "name": NAMES.get(k, k), "group": SLEEVE.get(k, ""),
+                             "name": C.SHORT_NAMES.get(k) or NAMES.get(k, k), "group": SLEEVE.get(k, ""),
                              "target": tgt.get(k, 0), "slice": sl.get(k), "current": round(cur.get(k, 0), 2),
                              "trade": tr.get(k, 0)})
     if lv:
