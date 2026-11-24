@@ -227,8 +227,14 @@ def daily(today: str | None = None) -> dict:
     return entry
 
 
+def _log_key(e):
+    # One decision per closing-price date; failed-download notes are one per day.
+    return ("close", e.get("data_date")) if e.get("action") in ("HOLD", "REBALANCE") else ("day", e["run_date"])
+
+
 def _append_log(state, entry):
-    state["log"] = [e for e in state["log"] if e["run_date"] != entry["run_date"]] + [entry]
+    k = _log_key(entry)
+    state["log"] = [e for e in state["log"] if _log_key(e) != k] + [entry]
     state["log"] = state["log"][-400:]
 
 

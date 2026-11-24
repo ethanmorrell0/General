@@ -1,388 +1,571 @@
 <title>Active Equity Fund</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-  /* Layout: an investor's app, phone first — what to do today, invest cash, your two pies as tiles, then fold-out detail. */
+  /* Layout: a phone-first investing app — sticky top bar, five screens (Home, Invest, Pies, Insights, Activity),
+     bottom tab bar on phones, left rail on wide screens. Dark-first; pie A = jade, pie B = amber. */
   :root {
-    --bg: #f4f5f2; --panel: #ffffff; --sunk: #eef1ec; --fg: #17201b; --muted: #5b6660; --line: #dde2dc;
-    --accent: #1f6f5c; --accent-soft: #e3f0eb; --accent-fg: #ffffff; --ok: #1b7a4a; --warn: #9a5800; --warn-soft: #fbefdc; --bad: #b3261e;
-    --pa: #1f6f5c; --pb: #b4561a; --c3: #3b5bdb; --c-muted: #9aa49f; --grid: #e9ece8;
-    --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
-    --font-num: "Source Serif 4", Georgia, "Times New Roman", serif;
-    --r: 12px; --r-sm: 8px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #0f1412; --panel: #161d1a; --sunk: #1c2421; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
-      --accent: #4fb79a; --accent-soft: #1b2e28; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --warn-soft: #33261a; --bad: #f07167;
-      --pa: #4fb79a; --pb: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0f1412; --panel: #161d1a; --sunk: #1c2421; --fg: #e5ebe7; --muted: #9ba8a1; --line: #29332f;
-    --accent: #4fb79a; --accent-soft: #1b2e28; --accent-fg: #0b1210; --ok: #5ccb8a; --warn: #e3a14a; --warn-soft: #33261a; --bad: #f07167;
-    --pa: #4fb79a; --pb: #e8924a; --c3: #8ba0ff; --c-muted: #5f6b65; --grid: #222b27;
+    --bg: #0c1110; --bg2: #111816; --card: #151d1b; --card2: #1b2522; --line: #24302c; --fg: #ecf2ef; --muted: #8f9e97; --faint: #5d6b65;
+    --pa: #4fc3a1; --pb: #f0995a; --accent: #4fc3a1; --accent-fg: #06120e; --ok: #5fd394; --warn: #f2b35b; --bad: #ff7a6e;
+    --ok-soft: rgba(95, 211, 148, .14); --warn-soft: rgba(242, 179, 91, .16); --bad-soft: rgba(255, 122, 110, .14); --chip: #1f2a27;
+    --hero1: #173a31; --hero2: #3a2615; --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    --font: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --r: 20px; --r-sm: 14px; --nav-h: 64px;
     color-scheme: dark;
   }
-  body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
-  .af { max-width: 1100px; margin-inline: auto; padding-block: 18px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
-  h1, h2, h3 { margin: 0; text-wrap: balance; }
-  p { margin: 0; }
-  .muted { color: var(--muted); }
-  .small { font-size: 13px; }
-  .num { font-variant-numeric: tabular-nums; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f2f4f1; --bg2: #e9ede8; --card: #ffffff; --card2: #f5f7f4; --line: #e2e7e1; --fg: #14201b; --muted: #5d6b64; --faint: #9aa6a0;
+      --pa: #1d8a6c; --pb: #c4621f; --accent: #1d8a6c; --accent-fg: #ffffff; --ok: #198754; --warn: #a15c00; --bad: #c0392b;
+      --ok-soft: rgba(25, 135, 84, .1); --warn-soft: rgba(161, 92, 0, .1); --bad-soft: rgba(192, 57, 43, .1); --chip: #eef2ee;
+      --hero1: #d8efe6; --hero2: #f8e3d1; --shadow: 0 8px 24px rgba(20, 40, 30, .08);
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f4f1; --bg2: #e9ede8; --card: #ffffff; --card2: #f5f7f4; --line: #e2e7e1; --fg: #14201b; --muted: #5d6b64; --faint: #9aa6a0;
+    --pa: #1d8a6c; --pb: #c4621f; --accent: #1d8a6c; --accent-fg: #ffffff; --ok: #198754; --warn: #a15c00; --bad: #c0392b;
+    --ok-soft: rgba(25, 135, 84, .1); --warn-soft: rgba(161, 92, 0, .1); --bad-soft: rgba(192, 57, 43, .1); --chip: #eef2ee;
+    --hero1: #d8efe6; --hero2: #f8e3d1; --shadow: 0 8px 24px rgba(20, 40, 30, .08);
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 15px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, p { margin: 0; }
+  button { font: inherit; color: inherit; }
+  .muted { color: var(--muted); } .faint { color: var(--faint); }
   .pos { color: var(--ok); } .neg { color: var(--bad); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* Header */
-  .af-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
-  .af-title { font-family: var(--font-num); font-weight: 600; font-size: clamp(1.5rem, 4vw, 1.9rem); letter-spacing: -0.01em; }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .brand-mark { width: 46px; height: 46px; flex: none; display: block; }
-  .brand-mark .ring { fill: var(--panel); stroke: var(--line); }
-  .brand-mark .half-a { fill: var(--pa); }
-  .brand-mark .half-b { fill: var(--pb); }
-  .brand-mark .rise { fill: none; stroke: var(--panel); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
-  .brand-sub { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 1px; }
-  .af-sync { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
-  .af-sync-msg { font-size: 12.5px; color: var(--muted); text-align: right; max-width: 18rem; }
-  .af-sync-msg.is-bad { color: var(--bad); }
-
-  /* Buttons and inputs */
-  .btn { font: inherit; font-weight: 600; font-size: 15px; border-radius: var(--r-sm); padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); }
-  .btn:hover:not(:disabled) { filter: brightness(1.08); }
-  .btn:disabled { opacity: .5; cursor: default; }
-  .btn.ghost { background: transparent; color: var(--accent); }
-  .btn.small { font-size: 13px; padding: 6px 12px; }
-  .btn:focus-visible, .link:focus-visible, input:focus-visible, summary:focus-visible, .seg button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-  .link { font: inherit; background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 13px; }
-  .spin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; }
-  @media (prefers-reduced-motion: no-preference) { .spin { animation: rot .8s linear infinite; } }
+  /* App shell */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 30; }
+  .topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .topbar-in { max-width: 1080px; margin-inline: auto; padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; gap: 12px; }
+  .logo { width: 34px; height: 34px; flex: none; }
+  .logo .half-a { fill: var(--pa); } .logo .half-b { fill: var(--pb); }
+  .logo .rise { fill: none; stroke: var(--bg); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-name { font-weight: 800; font-size: 16px; letter-spacing: -.01em; line-height: 1.1; }
+  .brand-sub { font-size: 11.5px; color: var(--muted); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .sync-msg { font-size: 12px; color: var(--muted); text-align: right; max-width: 12rem; line-height: 1.25; }
+  .sync-msg.is-bad { color: var(--bad); }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; cursor: pointer; flex: none; }
+  .icon-btn:disabled { opacity: .45; cursor: default; }
+  .icon-btn svg { width: 19px; height: 19px; stroke: var(--fg); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  @media (prefers-reduced-motion: no-preference) { .icon-btn.spinning svg { animation: rot 1s linear infinite; } }
   @keyframes rot { to { transform: rotate(360deg); } }
-  .money { display: flex; align-items: center; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); padding: 0 12px; min-width: 0; }
-  .money span { font-family: var(--font-num); font-size: 26px; color: var(--muted); }
-  .money input { font: inherit; font-family: var(--font-num); font-size: 28px; border: 0; background: transparent; color: var(--fg); padding: 8px 6px; width: 100%; min-width: 0; font-variant-numeric: tabular-nums; }
-  .money input:focus-visible { outline: none; }
-  .money:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
-  .field input { font: inherit; font-size: 15px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 7px 10px; width: 8.5rem; max-width: 100%; font-variant-numeric: tabular-nums; }
 
-  /* Cards and tiles */
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .card h2 { font-size: 18px; font-weight: 700; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 10px; }
-  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .tile .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-  .tile .val { font-family: var(--font-num); font-size: 26px; line-height: 1.15; font-variant-numeric: tabular-nums; }
-  .tile .sub { font-size: 12.5px; color: var(--muted); }
+  .shell { max-width: 1080px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom, 0px)); }
+  .view { display: flex; flex-direction: column; gap: 14px; max-width: 760px; margin-inline: auto; }
+  .view-title { font-size: 24px; font-weight: 800; letter-spacing: -.02em; padding-top: 4px; }
 
-  /* Today */
-  .today { border-left: 4px solid var(--ok); }
-  .today.is-rebalance { border-left-color: var(--warn); background: linear-gradient(0deg, var(--panel), var(--panel)); }
-  .pill { align-self: flex-start; display: inline-flex; align-items: center; gap: .45em; padding: 3px 11px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--accent-soft); color: var(--ok); }
-  .pill::before { content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor; }
-  .pill.is-rebalance { background: var(--warn-soft); color: var(--warn); }
-  .pill.is-wait { background: var(--sunk); color: var(--muted); }
-  .today .headline { font-size: 17px; font-weight: 600; }
-  .today .note { font-size: 15.5px; line-height: 1.6; max-width: 70ch; }
+  /* Tab bar: bottom on phones, rail on wide screens */
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: color-mix(in srgb, var(--bg2) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .tabbar-in { max-width: 560px; margin-inline: auto; display: grid; grid-template-columns: repeat(5, 1fr); height: var(--nav-h); }
+  .tab { background: none; border: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 11px; font-weight: 700; }
+  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tab[aria-current="page"] { color: var(--accent); }
+  .tab.invest-tab .bubble { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); display: grid; place-items: center; margin-top: -14px; box-shadow: var(--shadow); }
+  .tab.invest-tab .bubble svg { stroke: var(--accent-fg); }
+  @media (min-width: 960px) {
+    .tabbar { top: 61px; bottom: 0; right: auto; width: 96px; border-top: 0; border-right: 1px solid var(--line); background: transparent; backdrop-filter: none; }
+    .tabbar-in { grid-template-columns: 1fr; grid-auto-rows: 76px; height: auto; padding-top: 16px; }
+    .tab.invest-tab .bubble { margin-top: 0; }
+    .shell { padding-left: 120px; padding-bottom: 40px; }
+  }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .card-h h2 { font-size: 16px; font-weight: 800; }
+  .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--chip); font-size: 12.5px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); } .chip.warn { background: var(--warn-soft); color: var(--warn); } .chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .chip.a::before, .chip.b::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--pa); }
+  .chip.b::before { background: var(--pb); }
+  .btn { border: 0; border-radius: 14px; padding: 13px 18px; font-weight: 800; font-size: 15px; cursor: pointer; background: var(--accent); color: var(--accent-fg); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.block { width: 100%; }
+  .link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 700; cursor: pointer; font-size: 13.5px; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--chip); border-radius: 12px; padding: 4px; gap: 4px; }
+  .seg button { border: 0; background: transparent; border-radius: 9px; padding: 8px 10px; font-weight: 700; font-size: 13.5px; cursor: pointer; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--card); color: var(--fg); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+
+  /* Home */
+  .hero { border: 0; background: radial-gradient(120% 140% at 0% 0%, var(--hero1) 0%, transparent 55%), radial-gradient(120% 140% at 100% 100%, var(--hero2) 0%, transparent 55%), var(--card); box-shadow: var(--shadow); gap: 8px; }
+  .hero-val { font-size: clamp(38px, 10vw, 52px); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .hero-sub { font-size: 13px; color: var(--muted); }
+  .spark { position: relative; height: 110px; margin: 4px -6px -4px; }
+  .status { flex-direction: row; align-items: flex-start; gap: 14px; }
+  .status-ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--ok-soft); }
+  .status-ic svg { width: 24px; height: 24px; fill: none; stroke: var(--ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .status.is-rebalance .status-ic { background: var(--warn-soft); } .status.is-rebalance .status-ic svg { stroke: var(--warn); }
+  .status.is-start .status-ic { background: var(--chip); } .status.is-start .status-ic svg { stroke: var(--accent); }
+  .status-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+  .status-title { font-size: 17px; font-weight: 800; }
+  .status-note { font-size: 14px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .status-note.open { -webkit-line-clamp: unset; display: block; color: var(--fg); }
+  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .action { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; font-size: 13px; text-align: center; }
+  .action .ai { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--chip); }
+  .action .ai svg { width: 21px; height: 21px; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .action.primary { background: var(--accent); color: var(--accent-fg); border-color: transparent; }
+  .action.primary .ai { background: rgba(255,255,255,.18); } .action.primary .ai svg { stroke: var(--accent-fg); }
+  .action:disabled { opacity: .5; cursor: default; }
+  .splitbar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--chip); gap: 3px; }
+  .splitbar span { display: block; height: 100%; }
+  .split-legend { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+  .split-legend b { font-size: 17px; font-weight: 800; display: block; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .minis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .mini { background: var(--card2); border-radius: var(--r-sm); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  #v-home .mini, .tiles .mini { background: var(--card); border: 1px solid var(--line); }
+  .mini .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .mini .v { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
 
   /* Invest */
-  .invest { border: 2px solid var(--accent); }
-  .invest-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
-  .invest-row .money { flex: 1 1 12rem; }
-  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 10px; }
-  .pie-amt { border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--sunk); border-top: 4px solid var(--pa); }
-  .pie-amt.b { border-top-color: var(--pb); }
-  .pie-amt .val { font-family: var(--font-num); font-size: 30px; font-variant-numeric: tabular-nums; }
-  .buys { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr)); gap: 8px; }
-  .buy { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 11px; display: flex; flex-direction: column; gap: 1px; min-width: 0; background: var(--panel); }
-  .buy .tk { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
-  .buy .nm { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .buy .amt { font-family: var(--font-num); font-size: 19px; font-variant-numeric: tabular-nums; }
-  .buy.cash { background: var(--sunk); border-style: dashed; }
-  .steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
-  #plan { display: flex; flex-direction: column; gap: 14px; }
-  .done { background: var(--accent-soft); color: var(--fg); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; }
+  .amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: 10px 0 2px; }
+  .amount span { font-size: 34px; font-weight: 800; color: var(--muted); }
+  .amount input { font: inherit; font-size: clamp(44px, 13vw, 60px); font-weight: 800; letter-spacing: -.03em; background: transparent; border: 0; color: var(--fg); width: 2ch; max-width: 100%; text-align: left; padding: 0; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+  .amount input::-webkit-outer-spin-button, .amount input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .amount input::placeholder { color: var(--faint); }
+  .amount input:focus-visible { outline: none; }
+  .quick { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .quick button { border: 1px solid var(--line); background: var(--card2); border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 13.5px; }
+  .adv summary { cursor: pointer; font-size: 13px; color: var(--muted); font-weight: 600; list-style: none; text-align: center; }
+  .adv summary::-webkit-details-marker { display: none; }
+  .adv-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .field { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .field input { font: inherit; font-size: 16px; font-weight: 700; color: var(--fg); background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%; font-variant-numeric: tabular-nums; }
+  .split-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pie-amt { border-radius: var(--r-sm); padding: 14px 14px 14px 18px; background: var(--card2); display: flex; flex-direction: column; gap: 2px; position: relative; overflow: hidden; min-width: 0; }
+  .pie-amt::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--pa); }
+  .pie-amt.b::before { background: var(--pb); }
+  .pie-amt .v { font-size: 26px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .pie-amt .k { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 10px; }
+  .steps li { counter-increment: s; display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 14px; line-height: 1.45; align-items: center; }
+  .steps li::before { content: counter(s); width: 26px; height: 26px; border-radius: 50%; background: var(--chip); color: var(--accent); font-weight: 800; font-size: 13px; display: grid; place-items: center; }
+  .rows { display: flex; flex-direction: column; }
+  .row { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+  .row:last-child { border-bottom: 0; }
+  .av { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-weight: 800; font-size: 11px; letter-spacing: .02em; }
+  .nm { font-weight: 700; font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { font-size: 12px; color: var(--muted); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rt { text-align: right; font-weight: 800; font-size: 15.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .rt small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .group-h { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding-top: 8px; }
+  .group-h::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--pa); }
+  .group-h.b::before { background: var(--pb); }
+  .toast { background: var(--ok-soft); color: var(--ok); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 14px; }
 
   /* Pies */
-  .pies { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 14px; }
-  .pie { border-top: 4px solid var(--pa); }
-  .pie.b { border-top-color: var(--pb); }
-  .pie-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-  .slices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr)); gap: 8px; }
-  .slice { border-radius: var(--r-sm); padding: 9px 11px; background: var(--sunk); display: flex; flex-direction: column; gap: 1px; min-width: 0; position: relative; }
-  .slice .tk { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
-  .slice .nm { font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .slice .pct { font-family: var(--font-num); font-size: 22px; font-variant-numeric: tabular-nums; }
-  .slice .chg { position: absolute; top: 8px; right: 8px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
-  .slice.cash { background: transparent; border: 1px dashed var(--line); }
+  .donut-wrap { display: grid; grid-template-columns: 170px 1fr; gap: 18px; align-items: center; }
+  @media (max-width: 440px) { .donut-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; } .donut-wrap .chips { justify-content: center; } }
+  .donut { width: 170px; height: 170px; position: relative; }
+  .donut svg { display: block; }
+  .donut-c { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+  .donut-c b { font-size: 28px; font-weight: 800; display: block; line-height: 1; }
+  .donut-c span { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .badge { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); margin-left: 6px; vertical-align: middle; }
 
-  /* History */
-  .hist { display: flex; flex-direction: column; }
-  .hist-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-  .hist-row:last-child { border-bottom: 0; }
-
-  /* Details */
-  details.more { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
-  details.more > summary { cursor: pointer; padding: 14px 18px; font-weight: 700; font-size: 16px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  details.more > summary::-webkit-details-marker { display: none; }
-  details.more > summary::after { content: "+"; font-size: 20px; color: var(--muted); }
-  details.more[open] > summary::after { content: "–"; }
-  details.more > .body { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-  .tablewrap { overflow: auto; max-height: 30rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-  th { text-align: left; font-weight: 600; color: var(--muted); padding: 7px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); white-space: nowrap; font-size: 12.5px; }
-  td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  td.r, th.r { text-align: right; white-space: nowrap; }
-  td.wrap { min-width: 15rem; }
-  .seg { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-  .seg button { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 11px; cursor: pointer; }
-  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .chart { position: relative; min-height: 260px; }
-  .chart svg { display: block; }
-  .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 9px; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .tip .d { color: var(--muted); }
+  /* Insights */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); gap: 10px; }
+  .chart { position: relative; min-height: 230px; }
+  .chart svg, .spark svg { display: block; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tip { position: absolute; pointer-events: none; background: var(--card2); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 7px 10px; font-size: 12.5px; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+  .tip .d { color: var(--muted); font-weight: 600; }
   .tip .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
-  .disclaimer { color: var(--muted); font-size: 12.5px; max-width: 86ch; }
+  .bar { height: 6px; border-radius: 999px; background: var(--chip); overflow: hidden; margin-top: 6px; }
+  .bar span { display: block; height: 100%; border-radius: 999px; }
+  .sig-row { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .sig-row:last-child { border-bottom: 0; }
+  .rank { font-family: var(--mono); color: var(--muted); font-size: 12.5px; text-align: center; }
+  details.fold > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 16px; }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary::after { content: ""; width: 9px; height: 9px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); margin-right: 4px; }
+  details.fold[open] > summary::after { transform: rotate(-135deg); }
+  .rule { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .rule:last-child { border-bottom: 0; }
+  .fine { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* Activity */
+  .tl { display: flex; flex-direction: column; }
+  .tl-item { display: grid; grid-template-columns: 18px 1fr; gap: 12px; padding-bottom: 18px; position: relative; }
+  .tl-item::before { content: ""; position: absolute; left: 8px; top: 20px; bottom: 0; width: 2px; background: var(--line); }
+  .tl-item:last-child { padding-bottom: 0; } .tl-item:last-child::before { display: none; }
+  .tl-dot { width: 18px; height: 18px; border-radius: 50%; border: 4px solid var(--card); background: var(--ok); box-shadow: 0 0 0 1px var(--line); margin-top: 2px; }
+  .tl-dot.warn { background: var(--warn); } .tl-dot.muted { background: var(--faint); } .tl-dot.pay { background: var(--accent); }
+  .tl-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .tl-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  .tl-date { font-weight: 800; font-size: 14.5px; }
+  .tl-note { font-size: 13.5px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .tl-note.open { -webkit-line-clamp: unset; display: block; color: var(--fg); }
+  .trades { font-family: var(--mono); font-size: 12px; color: var(--warn); }
+  .hist-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .hist-row:last-child { border-bottom: 0; }
+  .hist-row b { font-size: 16px; font-variant-numeric: tabular-nums; }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 8px; }
 </style>
 
-<div class="af">
-  <header class="af-head">
-    <div class="brand">
-      <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-label="Active Equity Fund logo">
-        <circle class="ring" cx="24" cy="24" r="23"/>
-        <path class="half-a" d="M22.6 5 A19 19 0 0 0 22.6 43 Z"/>
-        <path class="half-b" d="M25.4 5 A19 19 0 0 1 25.4 43 Z"/>
-        <polyline class="rise" points="10.5,32 18.5,25 25,29.5 36.5,16.5"/>
-        <polyline class="rise" points="30.5,16 36.5,16.5 36.8,22.5"/>
-      </svg>
-      <div>
-        <h1 class="af-title">Active Equity Fund</h1>
-        <p class="brand-sub">Two pies · one fund</p>
+<header class="topbar">
+  <div class="topbar-in">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true">
+      <path class="half-a" d="M22.6 5 A19 19 0 0 0 22.6 43 Z"/>
+      <path class="half-b" d="M25.4 5 A19 19 0 0 1 25.4 43 Z"/>
+      <polyline class="rise" points="10.5,32 18.5,25 25,29.5 36.5,16.5"/>
+      <polyline class="rise" points="30.5,16 36.5,16.5 36.8,22.5"/>
+    </svg>
+    <div>
+      <div class="brand-name">Active Equity Fund</div>
+      <div class="brand-sub" id="brand-sub">Two pies · one fund</div>
+    </div>
+    <div class="topbar-right">
+      <span class="sync-msg" id="sync-msg"></span>
+      <button type="button" class="icon-btn" id="sync-btn" aria-label="Sync now" title="Sync now" disabled>
+        <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <!-- HOME -->
+  <section class="view" id="v-home" data-view="home">
+    <div class="card hero">
+      <span class="eyebrow">Your fund</span>
+      <div class="hero-val" id="h-value">£0.00</div>
+      <div class="chips" id="h-chips"><span class="chip">Nothing invested yet</span></div>
+      <p class="hero-sub" id="h-sub">Invest your first cash to start tracking.</p>
+      <div class="spark" id="h-spark"></div>
+    </div>
+
+    <div class="card status" id="h-status">
+      <div class="status-ic" id="h-status-ic"></div>
+      <div class="status-body">
+        <span class="status-title" id="h-status-title">Loading…</span>
+        <span class="faint" style="font-size:12.5px" id="h-status-meta"></span>
+        <p class="status-note" id="h-note"></p>
+        <button type="button" class="link" id="h-note-btn" style="align-self:flex-start">Read more</button>
       </div>
     </div>
-    <div class="af-sync">
-      <span class="af-sync-msg" id="sync-msg">Updates automatically every weekday.</span>
-      <button type="button" class="btn small" id="sync-btn" disabled><span class="spin" id="sync-spin" hidden></span><span id="sync-label">Sync now</span></button>
+
+    <div class="actions">
+      <button type="button" class="action primary" data-go="invest"><span class="ai"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Invest cash</button>
+      <button type="button" class="action" data-go="pies"><span class="ai"><svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span>My pies</button>
+      <button type="button" class="action" id="h-sync" disabled><span class="ai"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 21v-5h-5"/></svg></span>Sync now</button>
     </div>
-  </header>
 
-  <!-- Your money -->
-  <section class="tiles" id="money-tiles" aria-label="Your money">
-    <div class="tile"><span class="lbl">Invested</span><span class="val" id="m-invested">£0.00</span><span class="sub" id="m-count">Nothing yet</span></div>
-    <div class="tile"><span class="lbl">Worth now</span><span class="val" id="m-value">—</span><span class="sub">Estimated from the model</span></div>
-    <div class="tile"><span class="lbl">Gain</span><span class="val" id="m-gain">—</span><span class="sub" id="m-gain-pct">—</span></div>
-    <div class="tile"><span class="lbl">Vs All-World</span><span class="val" id="m-vs">—</span><span class="sub">Same money in VWRP</span></div>
-  </section>
-
-  <!-- Today -->
-  <section class="card today" id="today">
-    <span class="pill is-wait" id="pill">Loading</span>
-    <p class="headline" id="headline">Loading the latest run…</p>
-    <p class="note" id="note"></p>
-    <p class="small muted">Based on closing prices of <span id="data-date">—</span>. <button type="button" class="link" id="why-btn" aria-expanded="false">Show the rule output</button></p>
-    <p class="small muted" id="reasons" hidden></p>
-  </section>
-
-  <!-- Invest cash -->
-  <section class="card invest" id="invest">
-    <h2>Invest new cash</h2>
-    <div class="invest-row">
-      <label class="money" for="amt"><span>£</span><input id="amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" aria-label="Amount to invest in pounds"></label>
-      <button type="button" class="btn" id="plan-btn">Show me where</button>
-    </div>
-    <details id="actual-values">
-      <summary class="small muted" style="cursor:pointer">My pies are worth something different in Trading 212</summary>
-      <div class="invest-row" style="margin-top:10px">
-        <label class="field" for="va">Pie A value (£)<input id="va" type="number" inputmode="decimal" min="0" step="0.01"></label>
-        <label class="field" for="vb">Pie B value (£)<input id="vb" type="number" inputmode="decimal" min="0" step="0.01"></label>
-      </div>
-      <p class="small muted" style="margin-top:6px">Leave blank to use the dashboard’s estimate from what you’ve recorded.</p>
-    </details>
-    <div id="plan" hidden>
-      <div class="split" id="plan-split"></div>
-      <ol class="steps small" id="plan-steps"></ol>
-      <h3 style="font-size:15px">What each pie should buy</h3>
-      <div id="plan-buys" style="display:flex;flex-direction:column;gap:12px"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-        <button type="button" class="btn" id="record-btn">I’ve invested this</button>
-        <span class="small muted" id="record-note">Saves it here so the dashboard can track your money.</span>
+    <div class="card">
+      <div class="card-h"><h2>Pie balance</h2><span class="chip ok" id="h-split-chip">On target</span></div>
+      <div class="splitbar" id="h-splitbar"><span style="width:50%;background:var(--pa)"></span><span style="width:50%;background:var(--pb)"></span></div>
+      <div class="split-legend">
+        <div><span class="chip a">Pie A · Index +2%</span><b id="h-a-val">—</b></div>
+        <div style="text-align:right"><span class="chip b">Pie B · Stocks</span><b id="h-b-val">—</b></div>
       </div>
     </div>
-    <p class="done" id="record-done" hidden></p>
-  </section>
 
-  <!-- Pies -->
-  <section class="pies" id="pies">
-    <div class="card pie" id="pie-a">
-      <div class="pie-head"><h2>Pie A · Index +2%</h2><span class="small muted" id="pa-sub">—</span></div>
-      <p class="small muted">Goal: beat the FTSE All-World by 2% a year. VWRP at the core, tilted towards the strongest styles, regions and stocks.</p>
-      <div class="slices" id="pa-slices"></div>
-    </div>
-    <div class="card pie b" id="pie-b">
-      <div class="pie-head"><h2>Pie B · Stock selection</h2><span class="small muted" id="pb-sub">—</span></div>
-      <p class="small muted">Goal: maximum long-term return. Around 12 stocks with the strongest steady trends, smaller sizes for the riskier ones.</p>
-      <div class="slices" id="pb-slices"></div>
+    <div class="minis">
+      <div class="mini"><span class="k">Market risk</span><span class="v" id="h-risk">—</span></div>
+      <div class="mini"><span class="k">Fund vs All-World</span><span class="v" id="h-vs">—</span></div>
+      <div class="mini"><span class="k">Pie A since start</span><span class="v" id="h-a-ret">—</span></div>
+      <div class="mini"><span class="k">Pie B since start</span><span class="v" id="h-b-ret">—</span></div>
     </div>
   </section>
 
-  <section class="card" id="history" hidden>
-    <h2>What you’ve put in</h2>
-    <div class="hist" id="hist"></div>
+  <!-- INVEST -->
+  <section class="view" id="v-invest" data-view="invest" hidden>
+    <h1 class="view-title">Invest cash</h1>
+    <div class="card">
+      <span class="eyebrow" style="text-align:center">How much are you investing?</span>
+      <label class="amount" for="amt"><span>£</span><input id="amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Amount in pounds"></label>
+      <div class="quick">
+        <button type="button" data-add="25">+£25</button><button type="button" data-add="50">+£50</button>
+        <button type="button" data-add="100">+£100</button><button type="button" data-add="250">+£250</button>
+        <button type="button" data-add="0">Clear</button>
+      </div>
+      <button type="button" class="btn block" id="plan-btn">Show me where it goes</button>
+      <details class="adv">
+        <summary>My Trading 212 pie values are different ›</summary>
+        <div class="adv-row">
+          <label class="field" for="va">Pie A now (£)<input id="va" type="number" inputmode="decimal" min="0" step="0.01"></label>
+          <label class="field" for="vb">Pie B now (£)<input id="vb" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        </div>
+      </details>
+    </div>
+
+    <div class="card" id="plan" hidden>
+      <div class="split-cards" id="plan-split"></div>
+      <ol class="steps" id="plan-steps"></ol>
+      <div class="rows" id="plan-rows"></div>
+      <button type="button" class="btn block" id="record-btn">I’ve invested this</button>
+      <p class="fine" id="record-note" style="text-align:center">Saves it so the app can track your money.</p>
+    </div>
+    <p class="toast" id="record-done" hidden></p>
+
+    <div class="card">
+      <div class="card-h"><h2>Payments</h2><span class="chip" id="hist-total">£0.00</span></div>
+      <div id="hist"><p class="empty">No payments yet.</p></div>
+    </div>
   </section>
 
-  <!-- Detail -->
-  <details class="more" id="perf">
-    <summary>Performance</summary>
-    <div class="body">
-      <p class="small muted">Growth of 100 for each pie, the whole fund and the All-World index since the fund started, after estimated trading costs.</p>
+  <!-- PIES -->
+  <section class="view" id="v-pies" data-view="pies" hidden>
+    <h1 class="view-title">My pies</h1>
+    <div class="seg" role="group" aria-label="Choose a pie">
+      <button type="button" class="pie-seg" data-pie="A" aria-pressed="true">Pie A · Index +2%</button>
+      <button type="button" class="pie-seg" data-pie="B" aria-pressed="false">Pie B · Stocks</button>
+    </div>
+    <div class="card">
+      <div class="donut-wrap">
+        <div class="donut" id="donut"><div class="donut-c"><div><b id="donut-n">—</b><span>slices</span></div></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+          <h2 style="font-size:18px;font-weight:800" id="pie-title">Pie A · Index +2%</h2>
+          <p class="muted" style="font-size:14px" id="pie-goal"></p>
+          <div class="chips" id="pie-chips"></div>
+        </div>
+      </div>
+      <p class="fine">Type these percentages into the pie’s slices in Trading 212.</p>
+      <div class="rows" id="pie-rows"></div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section class="view" id="v-insights" data-view="insights" hidden>
+    <h1 class="view-title">Insights</h1>
+    <div class="tiles" id="ins-tiles"></div>
+    <div class="card">
+      <div class="card-h"><h2>Growth of 100</h2><span class="faint" style="font-size:12px" id="ins-since"></span></div>
+      <div class="legend"><span class="chip">Fund</span><span class="chip a">Pie A</span><span class="chip b">Pie B</span><span class="chip" style="opacity:.7">All-World (dashed)</span></div>
       <div class="chart" id="nav-chart"></div>
-      <div class="tablewrap"><table><thead><tr><th>Portfolio</th><th class="r">Return</th><th class="r">Vs index</th><th class="r">Volatility</th><th class="r">Worst fall</th></tr></thead><tbody id="stats-body"></tbody></table></div>
     </div>
-  </details>
-
-  <details class="more" id="log">
-    <summary>Decision log</summary>
-    <div class="body">
-      <div class="tablewrap"><table><thead><tr><th>Date</th><th>Decision</th><th>Pie A</th><th>Pie B</th><th>Trades (whole fund)</th><th>Note</th></tr></thead><tbody id="log-body"></tbody></table></div>
-    </div>
-  </details>
-
-  <details class="more" id="signals">
-    <summary>Signals behind the picks</summary>
-    <div class="body">
-      <p class="small muted">Momentum blends 12-month and 6-month returns; pie A’s styles are measured against the All-World index. Trend is the gap to the 200-day average. New picks need both above zero.</p>
-      <div class="seg" role="group" aria-label="Show signals for">
-        <button type="button" class="sig" data-sig="A" aria-pressed="false">Pie A</button>
-        <button type="button" class="sig" data-sig="B" aria-pressed="true">Pie B</button>
+    <div class="card">
+      <div class="card-h"><h2>Signals</h2></div>
+      <div class="seg" role="group" aria-label="Signals for">
+        <button type="button" class="sig-seg" data-sig="A" aria-pressed="false">Pie A</button>
+        <button type="button" class="sig-seg" data-sig="B" aria-pressed="true">Pie B</button>
       </div>
-      <div class="tablewrap"><table><thead><tr><th>Group</th><th>Name</th><th class="r">Rank</th><th class="r">Momentum</th><th class="r">Trend</th><th class="r">12m return</th><th>Status</th></tr></thead><tbody id="signals-body"></tbody></table></div>
+      <p class="fine">Ranked by momentum. A new pick needs an uptrend (price above its 200-day average).</p>
+      <div id="sig-rows"></div>
     </div>
-  </details>
-
-  <details class="more" id="backtest">
-    <summary>Backtest 2016–2026</summary>
-    <div class="body">
-      <p class="small muted">The same rules on past prices, after costs. “As built” uses today’s stock lists, chosen knowing how the decade went, so treat it as an upper bound. The fair test picks stocks only from the 30 largest companies of 2015. Expect the truth in between.</p>
+    <div class="card">
+      <div class="card-h"><h2>Backtest 2016–2026</h2></div>
+      <div class="minis" id="bt-tiles"></div>
+      <div class="legend"><span class="chip">Fund as built</span><span class="chip a">Fund fair test</span><span class="chip b">Pie B as built</span><span class="chip" style="opacity:.7">All-World (dashed)</span></div>
       <div class="chart" id="bt-chart"></div>
-      <div class="tablewrap"><table><thead><tr><th>Version</th><th>Measure</th><th class="r">Value</th></tr></thead><tbody id="bt-body"></tbody></table></div>
+      <p class="fine">“As built” uses today’s stock lists, chosen knowing how the decade went, so it’s an upper bound. The fair test picks stocks only from the 30 largest companies of 2015. Expect real results in between.</p>
     </div>
-  </details>
+    <div class="card">
+      <details class="fold">
+        <summary>How it works</summary>
+        <div id="rules" style="margin-top:10px"></div>
+        <p class="fine" style="margin-top:10px">Checks run every weekday at 22:35 UK after the US close and again at 09:35 to catch anything missed. Trades happen only when they matter; after a rebalance pie A waits 10 trading days and pie B 20. New cash goes where the fund is most underweight. A rules-based model, not financial advice. “Worth now” is an estimate; your Trading 212 balance is the real number.</p>
+      </details>
+    </div>
+  </section>
 
-  <details class="more" id="method">
-    <summary>How it works</summary>
-    <div class="body">
-      <div class="tablewrap"><table><thead><tr><th>Part</th><th class="r">Weight</th><th>Holds</th><th>Rule</th></tr></thead><tbody id="mandate-body"></tbody></table></div>
-      <ol class="steps">
-        <li>Every weekday the model re-scores both pies on the latest closing prices: at 22:35 UK after the US close, and again at 10:00 UK to catch anything missed. Sync now runs it straight away.</li>
-        <li>It only suggests trades when they matter: a holding enters or leaves, market risk changes, or a slice drifts well off target. After a rebalance pie A waits 10 trading days and pie B 20.</li>
-        <li>New cash goes to whichever pie and slices are furthest below target, so you rarely need to sell.</li>
-        <li>Money moves between the pies only when one reaches 45% or 55% of the fund.</li>
-      </ol>
-      <p class="disclaimer">A rules-based model, not regulated financial advice. Past and backtested returns don’t guarantee future ones. “Worth now” is an estimate from the model’s own prices and assumes you follow its trades; your Trading 212 balance is the real number.</p>
+  <!-- ACTIVITY -->
+  <section class="view" id="v-activity" data-view="activity" hidden>
+    <h1 class="view-title">Activity</h1>
+    <div class="card">
+      <div class="tl" id="tl"></div>
     </div>
-  </details>
-</div>
+  </section>
+</main>
+
+<nav class="tabbar" aria-label="Sections">
+  <div class="tabbar-in">
+    <button type="button" class="tab" data-go="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>Home</button>
+    <button type="button" class="tab" data-go="pies"><svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Pies</button>
+    <button type="button" class="tab invest-tab" data-go="invest"><span class="bubble"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Invest</button>
+    <button type="button" class="tab" data-go="insights"><svg viewBox="0 0 24 24"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l4-4 3 3 5-6"/></svg>Insights</button>
+    <button type="button" class="tab" data-go="activity"><svg viewBox="0 0 24 24"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>Activity</button>
+  </div>
+</nav>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const S = { data: null, contribs: [], sig: 'B', plan: null, db: null };
+  const S = { data: null, contribs: [], pie: 'A', sig: 'B', plan: null, db: null, view: 'home' };
   const gbp = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : '£' + d3.format(',.2f')(v));
   const sgbp = (v) => (v === null || v === undefined || Number.isNaN(v) ? '—' : (v >= 0 ? '+£' : '−£') + d3.format(',.2f')(Math.abs(v)));
-  const pct1 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : d3.format('+.1%')(Number(v)));
-  const p1 = (v) => (v === null || v === undefined ? '—' : d3.format('.1%')(Number(v)));
-  const fmtDate = (s) => (s ? d3.utcFormat('%-d %b %Y')(new Date(String(s).slice(0, 10) + 'T00:00:00Z')) : '—');
-  const fmtTime = (d) => d.toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
-  const cell = (tr, text, cls) => { const td = el('td', cls, text); tr.appendChild(td); return td; };
+  const pct1 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)) ? '—' : d3.format('+.1%')(Number(v)).replace('-', '−'));
+  const p1 = (v) => (v === null || v === undefined ? '—' : d3.format('.1%')(Number(v)).replace('-', '−'));
+  const fmtDate = (s) => (s ? d3.utcFormat('%-d %b')(new Date(String(s).slice(0, 10) + 'T00:00:00Z')) : '—');
+  const fmtDay = (s) => (s ? d3.utcFormat('%a %-d %b')(new Date(String(s).slice(0, 10) + 'T00:00:00Z')) : '—');
+  const fmtTime = (d) => d.toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined && text !== null) e.textContent = text; return e; };
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const sign = (v) => (v > 0.0005 ? 'pos' : v < -0.0005 ? 'neg' : '');
   const word = { REBALANCE: 'Rebalance', HOLD: 'Hold', NO_NEW_DATA: 'No new prices', NO_DATA: 'No data' };
+  const ICON = {
+    check: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    swap: '<svg viewBox="0 0 24 24"><path d="M7 4L3 8l4 4"/><path d="M3 8h14"/><path d="M17 20l4-4-4-4"/><path d="M21 16H7"/></svg>',
+    star: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    pause: '<svg viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>',
+  };
 
-  // ---------- money: contributions grown with each pie's index ----------
+  // ---------- routing ----------
+  const VIEWS = ['home', 'invest', 'pies', 'insights', 'activity'];
+  function go(v, push) {
+    if (!VIEWS.includes(v)) v = 'home';
+    S.view = v;
+    document.querySelectorAll('.view').forEach((s) => { s.hidden = s.dataset.view !== v; });
+    document.querySelectorAll('.tab').forEach((t) => (t.dataset.go === v ? t.setAttribute('aria-current', 'page') : t.removeAttribute('aria-current')));
+    if (push && location.hash !== '#' + v) location.hash = v;
+    window.scrollTo(0, 0);
+    if (S.data) { if (v === 'insights') renderInsights(); if (v === 'pies') renderPies(); if (v === 'home') renderSpark(); }
+  }
+  document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(b.dataset.go, true)));
+  window.addEventListener('hashchange', () => go(location.hash.slice(1)));
+
+  // ---------- money: each payment grows with its pie's index ----------
   function navAt(date) {
     const nav = S.data ? S.data.nav : [];
     let row = nav[0];
     for (const r of nav) { if (r.date <= date) row = r; else break; }
     return row;
   }
-  function holdingsValue() {
-    if (!S.data || !S.data.nav.length) return null;
-    const now = S.data.nav[S.data.nav.length - 1];
+  function valueAt(now) {
     let a = 0, b = 0, bench = 0, invested = 0;
     for (const c of S.contribs) {
+      if (c.basis_date > now.date) continue;
       const at = navAt(c.basis_date) || now;
-      a += (c.a || 0) * now.a / at.a;
-      b += (c.b || 0) * now.b / at.b;
-      bench += (c.amount || 0) * now.bench / at.bench;
-      invested += c.amount || 0;
+      a += (c.a || 0) * now.a / at.a; b += (c.b || 0) * now.b / at.b;
+      bench += (c.amount || 0) * now.bench / at.bench; invested += c.amount || 0;
     }
     return { a, b, total: a + b, bench, invested };
   }
-  function renderMoney() {
-    const v = holdingsValue();
-    const n = S.contribs.length;
-    $('m-invested').textContent = gbp(v ? v.invested : 0);
-    $('m-count').textContent = n ? `${n} payment${n > 1 ? 's' : ''}` : 'Nothing yet';
-    if (!v || !n) { ['m-value', 'm-gain', 'm-vs'].forEach((id) => { $(id).textContent = '—'; $(id).className = 'val'; }); $('m-gain-pct').textContent = 'Starts once you invest'; return; }
-    $('m-value').textContent = gbp(v.total);
-    const g = v.total - v.invested, vs = v.total - v.bench;
-    $('m-gain').textContent = sgbp(g); $('m-gain').className = 'val ' + (g > 0.005 ? 'pos' : g < -0.005 ? 'neg' : '');
-    $('m-gain-pct').textContent = v.invested ? pct1(g / v.invested) : '—';
-    $('m-vs').textContent = sgbp(vs); $('m-vs').className = 'val ' + (vs > 0.005 ? 'pos' : vs < -0.005 ? 'neg' : '');
-    $('va').placeholder = d3.format('.2f')(v.a); $('vb').placeholder = d3.format('.2f')(v.b);
-  }
+  const current = () => (S.data && S.data.nav.length ? valueAt(S.data.nav[S.data.nav.length - 1]) : null);
 
-  // ---------- today ----------
-  function renderToday() {
+  // ---------- home ----------
+  function renderHome() {
     const r = S.data.summary[0];
-    const reb = r.action === 'REBALANCE';
+    const v = current();
+    const has = S.contribs.length > 0 && v;
+    $('h-value').textContent = gbp(has ? v.total : 0);
+    const chips = $('h-chips'); chips.replaceChildren();
+    if (has) {
+      const g = v.total - v.invested, vs = v.total - v.bench;
+      chips.append(el('span', 'chip ' + (g >= 0 ? 'ok' : 'bad'), `${sgbp(g)} · ${pct1(v.invested ? g / v.invested : 0)}`),
+        el('span', 'chip ' + (vs >= 0 ? 'ok' : 'bad'), `${sgbp(vs)} vs All-World`));
+      $('h-sub').textContent = `${gbp(v.invested)} invested · ${S.contribs.length} payment${S.contribs.length > 1 ? 's' : ''} · estimate`;
+    } else {
+      chips.append(el('span', 'chip', 'Nothing invested yet'));
+      $('h-sub').textContent = 'Invest your first cash to start tracking.';
+    }
     const first = !S.contribs.length;
-    $('today').classList.toggle('is-rebalance', reb && !first);
-    $('pill').className = 'pill' + (reb && !first ? ' is-rebalance' : r.status !== 'ok' ? ' is-wait' : '');
-    $('pill').textContent = first ? 'Ready to start' : reb ? 'Rebalance today' : r.status !== 'ok' ? 'No update' : 'Hold';
-    $('headline').textContent = first
-      ? 'Set up your two pies with the slices below, then invest your first cash.'
-      : reb
-        ? 'Update the slices marked “changed” in your pies, then press Rebalance in each changed pie.'
-        : r.status !== 'ok' ? 'The last update couldn’t get prices, so nothing has changed.' : 'Nothing to trade. Keep investing new cash as below.';
-    $('note').textContent = r.note || '';
-    $('data-date').textContent = fmtDate(r.data_date);
-    $('reasons').textContent = r.reasons || '';
+    const reb = r.action === 'REBALANCE' && !first;
+    $('h-status').className = 'card status' + (reb ? ' is-rebalance' : first ? ' is-start' : '');
+    $('h-status-ic').innerHTML = first ? ICON.star : reb ? ICON.swap : r.status !== 'ok' ? ICON.pause : ICON.check;
+    $('h-status-title').textContent = first ? 'Ready to start' : reb ? 'Rebalance today' : r.status !== 'ok' ? 'No update today' : 'Hold · nothing to do';
+    $('h-status-meta').textContent = `${fmtDay(r.data_date)} close` + (S.data.generated ? ` · checked ${fmtTime(new Date(S.data.generated))}` : '');
+    $('h-note').textContent = first ? 'Set up your two pies from the Pies tab, then invest your first cash.' : reb
+      ? 'Open Pies: slices marked “changed” need updating, then press Rebalance on that pie in Trading 212. ' + (r.note || '')
+      : (r.note || '');
+    const a = has ? v.a : 0, b = has ? v.b : 0, tot = a + b;
+    const sa = tot ? (100 * a) / tot : 50;
+    const bars = $('h-splitbar').children;
+    bars[0].style.width = sa + '%'; bars[1].style.width = 100 - sa + '%';
+    $('h-a-val').textContent = has ? `${gbp(a)} · ${d3.format('.0f')(sa)}%` : '50%';
+    $('h-b-val').textContent = has ? `${gbp(b)} · ${d3.format('.0f')(100 - sa)}%` : '50%';
+    const off = Math.abs(sa - 50);
+    $('h-split-chip').className = 'chip ' + (off >= 5 ? 'warn' : 'ok');
+    $('h-split-chip').textContent = off >= 5 ? 'Needs evening out' : 'On target';
+    $('h-risk').textContent = r.risk_level === 2 ? 'Defensive' : r.risk_level === 1 ? 'Watch' : 'Calm';
+    $('h-risk').className = 'v ' + (r.risk_level === 2 ? 'neg' : r.risk_level === 1 ? '' : 'pos');
+    $('h-vs').textContent = pct1(r.total_excess); $('h-vs').className = 'v ' + sign(r.total_excess);
+    $('h-a-ret').textContent = pct1(r.a_return); $('h-a-ret').className = 'v ' + sign(r.a_return);
+    $('h-b-ret').textContent = pct1(r.b_return); $('h-b-ret').className = 'v ' + sign(r.b_return);
+    $('brand-sub').textContent = `${fmtDate(r.data_date)} close`;
+    renderSpark();
   }
-  $('why-btn').addEventListener('click', () => {
-    const open = $('reasons').hidden;
-    $('reasons').hidden = !open;
-    $('why-btn').setAttribute('aria-expanded', String(open));
-    $('why-btn').textContent = open ? 'Hide the rule output' : 'Show the rule output';
+  $('h-note-btn').addEventListener('click', () => {
+    const open = $('h-note').classList.toggle('open');
+    $('h-note-btn').textContent = open ? 'Show less' : 'Read more';
   });
 
-  // ---------- pies ----------
-  function renderPie(p, box, sub) {
-    const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0);
-    const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length;
-    const cash = rows.find((h) => h.id === 'CASH');
-    $(sub).textContent = `${rows.filter((h) => h.id !== 'CASH').length} slices` + (cash ? ` · ${cash.target}% cash` : '');
-    $(box).replaceChildren(...rows.map((h) => {
-      const t = el('div', 'slice' + (h.id === 'CASH' ? ' cash' : ''));
-      t.append(el('span', 'tk', h.id === 'CASH' ? 'CASH' : h.id), el('span', 'nm', h.id === 'CASH' ? 'Keep outside the pie' : h.name),
-        el('span', 'pct', (h.slice === null || h.slice === undefined ? h.target : h.slice) + '%'));
-      if (reb && Number(h.trade)) t.append(el('span', 'chg', 'changed'));
-      t.title = h.id === 'CASH' ? 'Cash share of this pie' : `${h.name}: slice ${h.slice}% (target ${h.target}% of the pie incl. cash)`;
-      return t;
-    }));
+  function renderSpark() {
+    const box = $('h-spark');
+    if (!S.data || S.view !== 'home') return;
+    box.replaceChildren();
+    const first = S.contribs.length ? d3.min(S.contribs, (c) => c.basis_date) : null;
+    const pts = first ? S.data.nav.filter((n) => n.date >= first).map((n) => { const v = valueAt(n); return { d: new Date(n.date + 'T00:00:00Z'), v: v.total, bench: v.bench }; }) : [];
+    if (pts.length < 2) { box.style.height = '0'; return; }
+    box.style.height = '';
+    const W = Math.max(240, box.clientWidth), H = 110;
+    const x = d3.scaleUtc(d3.extent(pts, (p) => p.d), [6, W - 6]);
+    const y = d3.scaleLinear(d3.extent(pts.flatMap((p) => [p.v, p.bench])), [H - 8, 8]).nice();
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).attr('preserveAspectRatio', 'none');
+    const id = 'g' + Math.random().toString(36).slice(2, 7);
+    const grad = svg.append('defs').append('linearGradient').attr('id', id).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+    [[0, 0.35], [1, 0]].forEach(([o, a]) => grad.append('stop').attr('offset', o).attr('stop-color', css('--accent')).attr('stop-opacity', a));
+    svg.append('path').datum(pts).attr('fill', `url(#${id})`).attr('d', d3.area().x((p) => x(p.d)).y0(H).y1((p) => y(p.v)));
+    svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', css('--faint')).attr('stroke-width', 1.5).attr('stroke-dasharray', '3 4').attr('d', d3.line().x((p) => x(p.d)).y((p) => y(p.bench)));
+    svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', css('--accent')).attr('stroke-width', 2.5).attr('stroke-linecap', 'round').attr('d', d3.line().x((p) => x(p.d)).y((p) => y(p.v)));
+    const last = pts[pts.length - 1];
+    svg.append('circle').attr('cx', x(last.d)).attr('cy', y(last.v)).attr('r', 4).attr('fill', css('--accent'));
   }
 
-  // ---------- invest plan ----------
+  // ---------- avatars ----------
+  function shade(base, i, n) { return d3.interpolateRgb(base, css('--card'))(n > 1 ? (i / (n - 1)) * 0.6 : 0); }
+  function avatar(ticker, color) {
+    const a = el('span', 'av', ticker === 'CASH' ? '£' : String(ticker).replace(/\..*$/, '').replace(/-.*$/, '').slice(0, 4));
+    a.style.background = color;
+    a.style.color = d3.hsl(color).l > 0.55 ? '#10201a' : '#ffffff';
+    return a;
+  }
+
+  // ---------- pies ----------
+  function renderPies() {
+    const p = S.pie;
+    const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0).sort((a, b) => b.target - a.target);
+    const base = css(p === 'A' ? '--pa' : '--pb');
+    const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length;
+    const colors = rows.map((h, i) => (h.id === 'CASH' ? css('--faint') : shade(base, i, rows.length)));
+    $('pie-title').textContent = p === 'A' ? 'Pie A · Index +2%' : 'Pie B · Stock selection';
+    $('pie-goal').textContent = p === 'A' ? 'Beat the FTSE All-World by 2% a year: the index at the core, tilted to what’s working.' : 'Maximum long-term return: about 12 steady-trend stocks, smaller sizes for riskier ones.';
+    const v = current();
+    const chips = $('pie-chips'); chips.replaceChildren();
+    if (v && S.contribs.length) chips.append(el('span', 'chip ' + (p === 'A' ? 'a' : 'b'), gbp(p === 'A' ? v.a : v.b)));
+    const ret = S.data.summary[0][p === 'A' ? 'a_return' : 'b_return'];
+    chips.append(el('span', 'chip ' + (ret >= 0 ? 'ok' : 'bad'), pct1(ret) + ' since start'));
+    $('donut-n').textContent = rows.filter((h) => h.id !== 'CASH').length;
+    const box = $('donut');
+    box.querySelectorAll('svg').forEach((s) => s.remove());
+    const svg = d3.select(box).insert('svg', ':first-child').attr('viewBox', '-85 -85 170 170').attr('width', 170).attr('height', 170);
+    const arcs = d3.pie().sort(null).value((h) => h.target).padAngle(0.025)(rows);
+    svg.selectAll('path').data(arcs).join('path').attr('d', d3.arc().innerRadius(58).outerRadius(83).cornerRadius(4)).attr('fill', (d, i) => colors[i]);
+    $('pie-rows').replaceChildren(...rows.map((h, i) => {
+      const r = el('div', 'row');
+      const mid = el('div'); mid.style.minWidth = '0';
+      const nm = el('div', 'nm', h.id === 'CASH' ? 'Cash' : h.name);
+      if (reb && Number(h.trade)) nm.append(el('span', 'badge', 'changed'));
+      mid.append(nm, el('div', 'sub', h.id === 'CASH' ? 'keep outside the pie' : `${h.id} · ${h.group}`));
+      const rt = el('div', 'rt', (h.slice ?? h.target) + '%');
+      if (v && S.contribs.length && h.id !== 'CASH') rt.append(el('small', null, gbp((p === 'A' ? v.a : v.b) * (Number(h.current) || h.target) / 100)));
+      r.append(avatar(h.id, colors[i]), mid, rt);
+      return r;
+    }));
+  }
+  document.querySelectorAll('.pie-seg').forEach((b) => b.addEventListener('click', () => {
+    S.pie = b.dataset.pie;
+    document.querySelectorAll('.pie-seg').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderPies();
+  }));
+
+  // ---------- invest ----------
   function pieValues() {
-    const v = holdingsValue();
-    const read = (id, fallback) => { const x = Number($(id).value); return $(id).value !== '' && x >= 0 ? x : fallback; };
+    const v = current();
+    const read = (id, fb) => { const x = Number($(id).value); return $(id).value !== '' && x >= 0 ? x : fb; };
     return { a: read('va', v ? v.a : 0), b: read('vb', v ? v.b : 0) };
   }
   function splitPennies(total, weights) {
-    // Split `total` in proportion to weights, rounded to pennies, summing exactly.
     const s = d3.sum(weights) || 1;
     const raw = weights.map((w) => (total * w) / s);
     const pence = raw.map((x) => Math.floor(x * 100 + 1e-6));
@@ -397,10 +580,11 @@
     const want = [Math.max(0, total / 2 - va), Math.max(0, total / 2 - vb)];
     const [ma, mb] = splitPennies(amount, want[0] + want[1] > 0 ? want : [1, 1]);
     const pies = [['A', va, ma], ['B', vb, mb]].map(([p, v, m]) => {
-      const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0);
+      const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0).sort((a, b) => b.target - a.target);
       const gaps = rows.map((h) => Math.max(0, (h.target / 100) * (v + m) - v * (Number(h.current) || 0) / 100));
       const amts = splitPennies(m, d3.sum(gaps) > 0 ? gaps : rows.map((h) => h.target));
-      const items = rows.map((h, i) => ({ ...h, amt: amts[i] })).filter((x) => x.amt > 0).sort((x, y) => y.amt - x.amt);
+      const base = css(p === 'A' ? '--pa' : '--pb');
+      const items = rows.map((h, i) => ({ ...h, amt: amts[i], color: h.id === 'CASH' ? css('--faint') : shade(base, i, rows.length) })).filter((x) => x.amt > 0).sort((x, y) => y.amt - x.amt);
       const cash = items.filter((x) => x.id === 'CASH').reduce((s, x) => s + x.amt, 0);
       return { p, v, m, intoPie: Math.round((m - cash) * 100) / 100, cash, items };
     });
@@ -415,66 +599,67 @@
     $('plan').hidden = false;
     $('plan-split').replaceChildren(...plan.pies.map((x) => {
       const t = el('div', 'pie-amt' + (x.p === 'B' ? ' b' : ''));
-      t.append(el('span', 'small muted', x.p === 'A' ? 'Into Pie A · Index +2%' : 'Into Pie B · Stock selection'), el('span', 'val', gbp(x.intoPie)),
-        el('span', 'small muted', x.cash > 0 ? `plus keep ${gbp(x.cash)} as cash` : x.m === 0 ? 'This pie is already ahead; nothing needed' : `${x.items.length} slices`));
+      t.append(el('span', 'k', x.p === 'A' ? 'PIE A · INDEX +2%' : 'PIE B · STOCKS'), el('span', 'v', gbp(x.intoPie)),
+        el('span', 'k', x.cash > 0 ? `+ ${gbp(x.cash)} as cash` : x.m === 0 ? 'Already ahead' : `${x.items.length} slices`));
       return t;
     }));
-    const first = !S.contribs.length;
     const steps = [];
-    if (first) steps.push('In Trading 212 (Invest or ISA account), create two pies and add the slices exactly as shown under “Pie A” and “Pie B” below.');
-    plan.pies.forEach((x) => { if (x.intoPie > 0) steps.push(`Open Pie ${x.p}, tap Invest and enter ${gbp(x.intoPie)}. Trading 212 spreads it across the slices; it should buy roughly what’s listed below.`); });
-    if (plan.pies.some((x) => x.cash > 0)) steps.push('Leave the cash amount uninvested in your account. It earns interest and the model uses it when markets recover.');
-    steps.push('Come back and press “I’ve invested this” so the dashboard can track your money.');
+    if (!S.contribs.length) steps.push('In Trading 212, create two pies with the slices from the Pies tab.');
+    plan.pies.forEach((x) => { if (x.intoPie > 0) steps.push(`Open Pie ${x.p}, tap Invest, enter ${gbp(x.intoPie)}.`); });
+    if (plan.pies.some((x) => x.cash > 0)) steps.push('Leave the cash part uninvested in your account.');
+    steps.push('Come back and tap “I’ve invested this”.');
     $('plan-steps').replaceChildren(...steps.map((s) => el('li', null, s)));
-    $('plan-buys').replaceChildren(...plan.pies.filter((x) => x.items.length).map((x) => {
-      const wrap = el('div');
-      wrap.append(el('p', 'small muted', x.p === 'A' ? 'Pie A' : 'Pie B'));
-      const g = el('div', 'buys');
-      g.append(...x.items.map((h) => {
-        const t = el('div', 'buy' + (h.id === 'CASH' ? ' cash' : ''));
-        t.append(el('span', 'tk', h.id === 'CASH' ? 'CASH' : h.id), el('span', 'nm', h.id === 'CASH' ? 'Keep as cash' : h.name), el('span', 'amt', gbp(h.amt)));
-        return t;
-      }));
-      wrap.append(g);
-      return wrap;
-    }));
+    const rows = [];
+    plan.pies.forEach((x) => {
+      if (!x.items.length) return;
+      rows.push(el('div', 'group-h' + (x.p === 'B' ? ' b' : ''), x.p === 'A' ? 'Pie A buys' : 'Pie B buys'));
+      x.items.forEach((h) => {
+        const r = el('div', 'row');
+        const mid = el('div'); mid.style.minWidth = '0';
+        mid.append(el('div', 'nm', h.id === 'CASH' ? 'Keep as cash' : h.name), el('div', 'sub', h.id === 'CASH' ? 'outside the pie' : `${h.id} · ${h.slice}% slice`));
+        r.append(avatar(h.id, h.color), mid, el('div', 'rt', gbp(h.amt)));
+        rows.push(r);
+      });
+    });
+    $('plan-rows').replaceChildren(...rows);
     $('record-btn').textContent = `I’ve invested ${gbp(amount)}`;
     $('record-btn').disabled = !S.db;
-    $('record-note').textContent = S.db ? 'Saves it here so the dashboard can track your money.' : 'Saving isn’t available in this view, but the split above is still right.';
+    $('record-note').textContent = S.db ? 'Saves it so the app can track your money.' : 'Saving isn’t available here, but the split is still right.';
   }
-  $('plan-btn').addEventListener('click', renderPlan);
-  $('amt').addEventListener('keydown', (e) => { if (e.key === 'Enter') renderPlan(); });
+  $('plan-btn').addEventListener('click', () => { renderPlan(); if (S.plan) $('plan').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  $('amt').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('plan-btn').click(); });
+  function fitAmount() { const i = $('amt'); i.style.width = Math.max(1, (i.value || i.placeholder || '0').length) + 0.6 + 'ch'; }
+  $('amt').addEventListener('input', () => { fitAmount(); if (S.plan) renderPlan(); });
   ['va', 'vb'].forEach((id) => $(id).addEventListener('input', () => { if (S.plan) renderPlan(); }));
-
+  document.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
+    const add = Number(b.dataset.add);
+    $('amt').value = add ? d3.format('.2f')((Number($('amt').value) || 0) + add) : '';
+    fitAmount(); renderPlan();
+  }));
   $('record-btn').addEventListener('click', async () => {
     if (!S.db || !S.plan) return;
     const plan = S.plan;
     $('record-btn').disabled = true;
     try {
-      await S.db.collection('contributions').add({
-        at: new Date().toISOString(), basis_date: S.data.summary[0].data_date,
-        amount: plan.amount, a: plan.pies[0].m, b: plan.pies[1].m,
-      });
-      $('plan').hidden = true; $('amt').value = ''; S.plan = null;
+      await S.db.collection('contributions').add({ at: new Date().toISOString(), basis_date: S.data.summary[0].data_date, amount: plan.amount, a: plan.pies[0].m, b: plan.pies[1].m });
+      $('plan').hidden = true; $('amt').value = ''; S.plan = null; fitAmount();
       $('record-done').hidden = false;
-      $('record-done').textContent = `Saved: ${gbp(plan.amount)} invested (${gbp(plan.pies[0].m)} Pie A, ${gbp(plan.pies[1].m)} Pie B).`;
+      $('record-done').textContent = `Saved · ${gbp(plan.amount)} invested (${gbp(plan.pies[0].m)} Pie A, ${gbp(plan.pies[1].m)} Pie B)`;
     } catch (e) {
       $('record-btn').disabled = false;
       $('record-note').textContent = 'Couldn’t save that. Check your connection and try again.';
     }
   });
-
-  // ---------- history ----------
   function renderHistory() {
-    $('history').hidden = !S.contribs.length;
+    $('hist-total').textContent = gbp(d3.sum(S.contribs, (c) => c.amount || 0));
+    if (!S.contribs.length) { $('hist').replaceChildren(el('p', 'empty', 'No payments yet.')); return; }
     $('hist').replaceChildren(...S.contribs.slice().reverse().map((c) => {
       const row = el('div', 'hist-row');
       const left = el('div');
-      left.append(el('div', null, gbp(c.amount)), el('div', 'small muted', `${fmtTime(new Date(c.at))} · A ${gbp(c.a)} · B ${gbp(c.b)}`));
-      const del = el('button', 'link', 'Remove');
-      del.type = 'button';
+      left.append(el('b', null, gbp(c.amount)), el('div', 'fine', `${new Date(c.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} · A ${gbp(c.a)} · B ${gbp(c.b)}`));
+      const del = el('button', 'link', 'Remove'); del.type = 'button'; del.style.color = 'var(--muted)';
       del.addEventListener('click', async () => {
-        if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = 'Tap again to remove'; return; }
+        if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = 'Tap to confirm'; del.style.color = 'var(--bad)'; return; }
         try { await S.db.collection('contributions').doc(c._id).delete(); } catch (e) { del.textContent = 'Couldn’t remove'; }
       });
       row.append(left, del);
@@ -482,120 +667,162 @@
     }));
   }
 
-  // ---------- detail sections ----------
-  function renderDetail() {
-    const D = S.data;
-    $('stats-body').replaceChildren(...D.stats.map((r) => {
-      const tr = el('tr'); cell(tr, r.portfolio); cell(tr, pct1(r.return), 'r');
-      cell(tr, pct1(r.vs_index), 'r ' + (r.vs_index > 0.0005 ? 'pos' : r.vs_index < -0.0005 ? 'neg' : ''));
-      cell(tr, p1(r.volatility), 'r'); cell(tr, p1(r.max_drawdown), 'r'); return tr;
-    }));
-    $('log-body').replaceChildren(...D.log.map((r) => {
-      const tr = el('tr'); cell(tr, fmtDate(r.run_date)); cell(tr, word[r.action] || r.action);
-      cell(tr, word[r.a_action] || '—'); cell(tr, word[r.b_action] || '—'); cell(tr, r.trades || '—', 'wrap'); cell(tr, r.note || '—', 'wrap'); return tr;
-    }));
-    const fmt = (r) => { const v = Number(r.value); if (/Vs All-World/.test(r.metric)) return d3.format('+.1%')(v); if (/Turnover|Tracking/.test(r.metric)) return d3.format('.0%')(v); return d3.format('.1%')(v); };
-    $('bt-body').replaceChildren(...D.bt_metrics.map((r) => { const tr = el('tr'); cell(tr, r.variant); cell(tr, r.metric); cell(tr, fmt(r), 'r'); return tr; }));
-    $('mandate-body').replaceChildren(...D.mandate.map((r) => {
-      const tr = el('tr'); cell(tr, r.sleeve); cell(tr, (/Defensive|Cash/.test(r.sleeve) ? 'up to ' : '') + r.weight + '%', 'r'); cell(tr, r.holds); cell(tr, r.rule, 'wrap'); return tr;
-    }));
+  // ---------- insights ----------
+  function tile(k, v, cls) { const t = el('div', 'mini'); t.append(el('span', 'k', k), el('span', 'v ' + (cls || ''), v)); return t; }
+  function renderInsights() {
+    const D = S.data, r = D.summary[0];
+    const fund = D.stats.find((s) => /Whole/.test(s.portfolio)) || {};
+    $('ins-tiles').replaceChildren(
+      tile('Fund vs All-World', pct1(r.total_excess), sign(r.total_excess)),
+      tile('Pie A vs All-World', pct1(r.a_excess), sign(r.a_excess)),
+      tile('Pie B vs All-World', pct1(r.b_excess), sign(r.b_excess)),
+      tile('Worst fall so far', p1(fund.max_drawdown), fund.max_drawdown < -0.0005 ? 'neg' : ''));
+    $('ins-since').textContent = 'since ' + fmtDate(r.inception);
+    lineChart($('nav-chart'), D.nav, [{ key: 'total', c: '--fg' }, { key: 'a', c: '--pa' }, { key: 'b', c: '--pb' }, { key: 'bench', c: '--faint', dash: true }], ['Fund', 'Pie A', 'Pie B', 'All-World']);
     renderSignals();
+    const m = (v, k) => (D.bt_metrics.find((x) => x.key === `${v}:${k}`) || {}).value;
+    $('bt-tiles').replaceChildren(
+      tile('Fair test vs index', pct1(m('total_fair', 'excess_cagr')) + ' /yr', sign(m('total_fair', 'excess_cagr'))),
+      tile('As built vs index', pct1(m('total', 'excess_cagr')) + ' /yr', sign(m('total', 'excess_cagr'))),
+      tile('Fair test return', p1(m('total_fair', 'fund_cagr')) + ' /yr'),
+      tile('Fair test worst fall', p1(m('total_fair', 'fund_maxdd')), 'neg'));
+    lineChart($('bt-chart'), D.bt_curve, [{ key: 'total', c: '--fg' }, { key: 'total_fair', c: '--pa' }, { key: 'b', c: '--pb' }, { key: 'bench', c: '--faint', dash: true }], ['As built', 'Fair test', 'Pie B', 'All-World']);
+    $('rules').replaceChildren(...D.mandate.map((x) => {
+      const d = el('div', 'rule');
+      d.append(el('b', null, `${x.sleeve} · ${/Defensive|Cash/.test(x.sleeve) ? 'up to ' : ''}${x.weight}%`), el('span', 'muted', x.rule));
+      return d;
+    }));
   }
   function renderSignals() {
-    const rows = S.data.signals.filter((r) => String(r.key).startsWith(S.sig === 'A' ? 'A ' : 'B:'));
-    $('signals-body').replaceChildren(...rows.map((r) => {
-      const tr = el('tr'); cell(tr, r.group); cell(tr, r.name); cell(tr, String(r.rank), 'r');
-      cell(tr, pct1(r.momentum), 'r ' + (Number(r.momentum) >= 0 ? 'pos' : 'neg'));
-      cell(tr, pct1(r.trend), 'r ' + (Number(r.trend) >= 0 ? 'pos' : 'neg'));
-      cell(tr, pct1(r.return_12m), 'r'); cell(tr, r.status); return tr;
+    const rows = S.data.signals.filter((r) => String(r.key).startsWith(S.sig === 'A' ? 'A ' : 'B:')).slice(0, 25);
+    const max = d3.max(rows, (r) => Math.abs(Number(r.momentum) || 0)) || 1;
+    $('sig-rows').replaceChildren(...rows.map((r) => {
+      const row = el('div', 'sig-row');
+      const mid = el('div'); mid.style.minWidth = '0';
+      const bar = el('div', 'bar'); const fill = el('span');
+      fill.style.width = (Math.abs(Number(r.momentum) || 0) / max) * 100 + '%';
+      fill.style.background = Number(r.momentum) >= 0 ? css('--ok') : css('--bad');
+      bar.append(fill);
+      mid.append(el('div', 'nm', r.name), el('div', 'sub', `${r.group.replace(/^[AB] · /, '')} · mom ${pct1(r.momentum)} · trend ${pct1(r.trend)}`), bar);
+      const cls = r.status === 'Held' ? 'ok' : /takeover/.test(r.status) ? 'bad' : /Fails/.test(r.status) ? '' : 'warn';
+      const label = r.status === 'Held' ? 'Held' : /takeover/.test(r.status) ? 'Takeover' : /Fails/.test(r.status) ? 'Downtrend' : 'Candidate';
+      row.append(el('span', 'rank', '#' + r.rank), mid, el('span', 'chip ' + cls, label));
+      return row;
     }));
   }
-  document.querySelectorAll('.sig').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.sig-seg').forEach((b) => b.addEventListener('click', () => {
     S.sig = b.dataset.sig;
-    document.querySelectorAll('.sig').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('.sig-seg').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     renderSignals();
   }));
 
-  function lineChart(box, rows, series) {
+  function lineChart(box, rows, series, labels) {
     box.replaceChildren();
-    if (!rows || rows.length < 2) { box.append(el('p', 'small muted', 'The lines start once there are two days of prices.')); return; }
+    if (!rows || rows.length < 2) { box.append(el('p', 'empty', 'The chart starts after the next market close.')); return; }
     const data = rows.map((r) => ({ ...r, d: new Date(String(r.date).slice(0, 10) + 'T00:00:00Z') }));
-    const W = Math.max(280, box.clientWidth), H = 260;
-    const palette = [css('--fg'), css('--pa'), css('--pb'), css('--c3')];
-    const colors = series.map((s, i) => (i === series.length - 1 ? css('--c-muted') : palette[i]));
+    const W = Math.max(260, box.clientWidth), H = 230, L = 34, R = 8, T = 8, B = 24;
     const vals = data.flatMap((r) => series.map((s) => r[s.key]).filter((v) => v !== null && v !== undefined));
-    const y = d3.scaleLinear(d3.extent(vals), [H - 28, 10]).nice();
-    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
-    const probe = svg.append('g').attr('font-size', 12);
-    const yTicks = y.ticks(5);
-    let left = 0, right = 0;
-    yTicks.forEach((t) => { const n = probe.append('text').text(d3.format(',')(t)); left = Math.max(left, n.node().getComputedTextLength()); n.remove(); });
-    series.forEach((s) => { const n = probe.append('text').text(s.label + ' 000'); right = Math.max(right, n.node().getComputedTextLength()); n.remove(); });
-    probe.remove();
-    left += 10; right = Math.min(right + 10, W * 0.38);
-    const x = d3.scaleUtc(d3.extent(data, (r) => r.d), [left, W - right]);
-    const g = svg.append('g').attr('font-size', 12).attr('font-family', css('--font-body'));
-    g.selectAll('line.grid').data(yTicks).join('line').attr('x1', left).attr('x2', W - right).attr('y1', y).attr('y2', y).attr('stroke', css('--grid'));
-    g.selectAll('text.yt').data(yTicks).join('text').attr('x', left - 6).attr('y', (t) => y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', css('--muted')).text((t) => d3.format(',')(t));
+    const y = d3.scaleLinear(d3.extent(vals), [H - B, T]).nice();
+    const x = d3.scaleUtc(d3.extent(data, (r) => r.d), [L, W - R]);
+    const svg = d3.select(box).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`);
+    const g = svg.append('g').attr('font-size', 11).attr('font-family', css('--font'));
+    const yt = y.ticks(4);
+    g.selectAll('line.gl').data(yt).join('line').attr('x1', L).attr('x2', W - R).attr('y1', y).attr('y2', y).attr('stroke', css('--line'));
+    g.selectAll('text.yl').data(yt).join('text').attr('x', L - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end').attr('fill', css('--muted')).text((t) => d3.format(',')(t));
     const span = data[data.length - 1].d - data[0].d;
-    const xt = x.ticks(Math.max(2, Math.min(data.length - 1, Math.floor((W - left - right) / 90))));
-    g.selectAll('text.xt').data(xt).join('text').attr('x', x).attr('y', H - 8).attr('text-anchor', 'middle').attr('fill', css('--muted'))
+    const xt = x.ticks(Math.max(2, Math.min(data.length - 1, Math.floor((W - L - R) / 80))));
+    g.selectAll('text.xl').data(xt).join('text').attr('x', x).attr('y', H - 6).attr('text-anchor', 'middle').attr('fill', css('--muted'))
       .text((t) => (span > 400 * 864e5 ? d3.utcFormat('%Y')(t) : d3.utcFormat('%-d %b')(t)));
-    const ends = [];
-    series.forEach((s, i) => {
+    series.forEach((s) => {
       const pts = data.filter((r) => r[s.key] !== null && r[s.key] !== undefined);
-      if (!pts.length) return;
-      g.append('path').datum(pts).attr('fill', 'none').attr('stroke', colors[i]).attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
-        .attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r[s.key])));
-      const last = pts[pts.length - 1];
-      ends.push({ y: y(last[s.key]), text: `${s.label} ${d3.format('.0f')(last[s.key])}` });
+      g.append('path').datum(pts).attr('fill', 'none').attr('stroke', css(s.c)).attr('stroke-width', s.dash ? 1.6 : 2.2).attr('stroke-dasharray', s.dash ? '4 4' : null)
+        .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round').attr('d', d3.line().x((r) => x(r.d)).y((r) => y(r[s.key])));
     });
-    ends.sort((a, b) => a.y - b.y);
-    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
-    g.selectAll('text.end').data(ends).join('text').attr('x', W - right + 6).attr('y', (e) => e.y).attr('dy', '0.32em').attr('fill', css('--fg')).text((e) => e.text);
-    const tip = el('div', 'tip'); tip.hidden = true; box.appendChild(tip);
-    const rule = g.append('line').attr('y1', 10).attr('y2', H - 28).attr('stroke', css('--line')).style('display', 'none');
+    const tip = el('div', 'tip'); tip.hidden = true; box.append(tip);
+    const rule = g.append('line').attr('y1', T).attr('y2', H - B).attr('stroke', css('--faint')).style('display', 'none');
     const bis = d3.bisector((r) => r.d).center;
     svg.on('pointermove', (ev) => {
-      const [mx] = d3.pointer(ev);
-      const r = data[bis(data, x.invert(mx))];
+      const r = data[bis(data, x.invert(d3.pointer(ev)[0]))];
       rule.style('display', null).attr('x1', x(r.d)).attr('x2', x(r.d));
       tip.replaceChildren(el('div', 'd', d3.utcFormat('%-d %b %Y')(r.d)));
       series.forEach((s, i) => {
-        const v = r[s.key]; if (v === null || v === undefined) return;
-        const line = el('div'); const sw = el('span', 'sw'); sw.style.background = colors[i];
-        line.append(sw, document.createTextNode(`${s.label} ${d3.format('.1f')(v)}`)); tip.appendChild(line);
+        if (r[s.key] === null || r[s.key] === undefined) return;
+        const line = el('div'); const sw = el('span', 'sw'); sw.style.background = css(s.c);
+        line.append(sw, document.createTextNode(`${labels[i]} ${d3.format('.1f')(r[s.key])}`)); tip.append(line);
       });
       tip.hidden = false;
-      tip.style.left = Math.min(Math.max(0, (x(r.d) / W) * box.clientWidth + 12), box.clientWidth - tip.offsetWidth) + 'px';
-      tip.style.top = '8px';
+      tip.style.left = Math.min(Math.max(0, (x(r.d) / W) * box.clientWidth + 10), box.clientWidth - tip.offsetWidth) + 'px';
+      tip.style.top = '4px';
     }).on('pointerleave', () => { tip.hidden = true; rule.style('display', 'none'); });
   }
-  function renderCharts() {
-    if (!S.data) return;
-    if ($('perf').open) lineChart($('nav-chart'), S.data.nav, [{ key: 'total', label: 'Fund' }, { key: 'a', label: 'Pie A' }, { key: 'b', label: 'Pie B' }, { key: 'bench', label: 'All-World' }]);
-    if ($('backtest').open) lineChart($('bt-chart'), S.data.bt_curve, [{ key: 'total', label: 'Fund as built' }, { key: 'total_fair', label: 'Fund fair test' }, { key: 'b', label: 'Pie B as built' }, { key: 'bench', label: 'All-World' }]);
+
+  // ---------- activity ----------
+  function renderActivity() {
+    const items = [];
+    S.data.log.forEach((r) => items.push({ kind: 'run', date: r.run_date, r }));
+    S.contribs.forEach((c) => items.push({ kind: 'pay', date: String(c.at).slice(0, 10), c }));
+    items.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.kind === 'pay' ? -1 : 1));
+    if (!items.length) { $('tl').replaceChildren(el('p', 'empty', 'Nothing yet.')); return; }
+    $('tl').replaceChildren(...items.map((it) => {
+      const item = el('div', 'tl-item');
+      const body = el('div', 'tl-body');
+      const head = el('div', 'tl-head');
+      if (it.kind === 'pay') {
+        item.append(el('span', 'tl-dot pay'), body);
+        head.append(el('span', 'tl-date', fmtDay(it.date)), el('span', 'chip ok', `Invested ${gbp(it.c.amount)}`));
+        body.append(head, el('span', 'fine', `Pie A ${gbp(it.c.a)} · Pie B ${gbp(it.c.b)}`));
+        return item;
+      }
+      const r = it.r;
+      const reb = r.action === 'REBALANCE';
+      item.append(el('span', 'tl-dot' + (reb ? ' warn' : r.action === 'HOLD' ? '' : ' muted')), body);
+      head.append(el('span', 'tl-date', fmtDay(r.run_date)), el('span', 'chip ' + (reb ? 'warn' : 'ok'), word[r.action] || r.action));
+      if (r.a_action) head.append(el('span', 'chip a', 'A ' + (word[r.a_action] || '').toLowerCase()));
+      if (r.b_action) head.append(el('span', 'chip b', 'B ' + (word[r.b_action] || '').toLowerCase()));
+      body.append(head);
+      if (r.trades) body.append(el('span', 'trades', r.trades));
+      if (r.note) {
+        const n = el('p', 'tl-note', r.note);
+        n.addEventListener('click', () => n.classList.toggle('open'));
+        body.append(n);
+      }
+      return item;
+    }));
   }
-  ['perf', 'backtest'].forEach((id) => $(id).addEventListener('toggle', renderCharts));
-  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(renderCharts, 150); });
 
   function renderAll() {
     if (!S.data) return;
-    renderMoney(); renderToday(); renderPie('A', 'pa-slices', 'pa-sub'); renderPie('B', 'pb-slices', 'pb-sub'); renderHistory();
-    if (!S.contribs.length && !$('amt').value) $('amt').placeholder = '165.44';
+    renderHome(); renderHistory(); renderActivity();
+    if (S.view === 'pies') renderPies();
+    if (S.view === 'insights') renderInsights();
+    $('amt').placeholder = S.contribs.length ? '0' : '165.44';
+    fitAmount();
     if (S.plan) renderPlan();
   }
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (!S.data) return; renderSpark(); if (S.view === 'insights') renderInsights(); }, 150); });
+  try { window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', renderAll); } catch (e) { /* older browsers */ }
+
+  // ---------- sync state (declared before load so callbacks can use it) ----------
+  const SERVER = 'Claude Code Remote';
+  const TRIGGER = 'trig_01PC31FgzjK37vrhh5kAgWyL';
+  const KEY = 'af-sync-started';
+  const btn = $('sync-btn'), msg = $('sync-msg');
+  let mcp = null, pollTimer = null;
+  function say(text, bad) { msg.textContent = text; msg.classList.toggle('is-bad', !!bad); }
+  function busy(on) { btn.disabled = on || !mcp; $('h-sync').disabled = on || !mcp; btn.classList.toggle('spinning', on); }
+  function readStarted() { try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } }
+  function writeStarted(t) { try { localStorage.setItem(KEY, String(t)); } catch (e) { /* storage blocked */ } }
 
   // ---------- load ----------
+  go(location.hash.slice(1) || 'home');
   fetch('data.json', { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((D) => {
     S.data = D;
     const started = readStarted();
-    if (started && Date.parse(D.generated) > started) { writeStarted(0); clearTimeout(pollTimer); if (mcp) busy(false); }
-    if (!readStarted()) say(defaultMsg());
-    renderAll(); renderDetail(); renderCharts();
+    if (started && Date.parse(D.generated) > started) { writeStarted(0); clearTimeout(pollTimer); busy(false); say(''); }
+    renderAll(); go(S.view);
   }).catch(() => {
-    $('headline').textContent = 'The latest data couldn’t be loaded. Reload the page, or press Sync now to rebuild it.';
-    $('pill').textContent = 'Error'; $('pill').className = 'pill is-wait';
+    $('h-status-title').textContent = 'Couldn’t load the latest data';
+    $('h-note').textContent = 'Reload the page, or tap sync to rebuild it.';
   });
 
   const api = window.claude;
@@ -606,64 +833,50 @@
     db.collection('contributions').orderBy('at').onSnapshot((snap) => {
       S.contribs = snap.docs.map((d) => ({ ...d.data(), _id: d.id }));
       renderAll();
-      // First visit with nothing invested yet: start from the opening amount.
-      if (!snap.metadata.fromCache && snap.empty && !S.prefilled && !$('amt').value) {
-        S.prefilled = true; $('amt').value = '165.44'; renderPlan();
-      }
     }, () => { /* store unavailable: the calculator still works */ });
     if (S.plan) renderPlan();
   }).catch(() => {});
 
   // ---------- sync ----------
-  const SERVER = 'Claude Code Remote';
-  const TRIGGER = 'trig_01PC31FgzjK37vrhh5kAgWyL';
-  const KEY = 'af-sync-started';
-  const btn = $('sync-btn'), msg = $('sync-msg'), spin = $('sync-spin'), label = $('sync-label');
-  let mcp = null, pollTimer = null;
-  const say = (text, bad) => { msg.textContent = text; msg.classList.toggle('is-bad', !!bad); };
-  const busy = (on, text) => { btn.disabled = on || !mcp; spin.hidden = !on; label.textContent = text || 'Sync now'; };
-  function readStarted() { try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; } }
-  function writeStarted(t) { try { localStorage.setItem(KEY, String(t)); } catch (e) { /* storage blocked */ } }
-  function defaultMsg() { return 'Updated ' + (S.data && S.data.generated ? fmtTime(new Date(S.data.generated)) : '—'); }
   const errorText = (e) => ({
-    server_not_connected: 'Sync needs the Claude Code Remote connector. Add it in claude.ai Settings → Connectors.',
-    needs_reauth: 'Reconnect Claude Code Remote in claude.ai Settings → Connectors.',
-    selection_required: 'Choose which Claude Code Remote connection to use, then try again.',
-    not_in_manifest: 'Sync isn’t allowed for this page. Allow Claude Code Remote in the page’s Permissions menu.',
-    blocked_by_policy: 'Your organization’s policy blocks starting runs from this page.',
-    consent_required: 'Sync needs your permission. Press Sync now again to allow it.',
-    tool_error: 'The update couldn’t start: ' + (e && e.message ? e.message : 'the scheduled task refused.'),
-  }[e && e.code] || 'Couldn’t confirm the update started. Check back in a few minutes before trying again.');
+    server_not_connected: 'Add Claude Code Remote in claude.ai Settings → Connectors to sync.',
+    needs_reauth: 'Reconnect Claude Code Remote in Settings → Connectors.',
+    selection_required: 'Choose which Claude Code Remote connection to use.',
+    not_in_manifest: 'Allow Claude Code Remote in this page’s Permissions menu.',
+    blocked_by_policy: 'Your organization blocks syncing from this page.',
+    consent_required: 'Tap sync again to allow it.',
+    tool_error: 'Sync couldn’t start: ' + (e && e.message ? e.message : 'the task refused.'),
+  }[e && e.code] || 'Couldn’t confirm sync started. Check back in a few minutes.');
   async function poll(startedAt) {
     clearTimeout(pollTimer);
-    if (Date.now() - startedAt > 20 * 60 * 1000) { busy(false); say('Taking longer than usual. The page updates itself when it’s done.'); return; }
+    if (Date.now() - startedAt > 20 * 60 * 1000) { busy(false); say('Taking longer than usual'); return; }
     try {
       const res = await mcp.callTool(SERVER, 'get_trigger', { trigger_id: TRIGGER }, { cache: false });
       const run = res && res.payload && res.payload.trigger && res.payload.trigger.last_run;
       if (run && Date.parse(run.fired_at) >= startedAt - 60000 && run.finished_at) {
         busy(false);
-        if (/FAILED/.test(run.status || '')) say('The update failed. Showing the previous one.', true);
-        else say('Done. Reloading with the new numbers…');
+        if (/FAILED/.test(run.status || '')) say('Sync failed', true); else say('Updated · reloading');
         return;
       }
     } catch (e) { /* keep waiting */ }
     pollTimer = setTimeout(() => poll(startedAt), 30000);
   }
-  btn.addEventListener('click', async () => {
+  async function startSync() {
     if (!mcp) return;
-    busy(true, 'Starting…');
+    busy(true); say('Syncing… about 5 min');
     try {
       await mcp.callTool(SERVER, 'fire_trigger', { trigger_id: TRIGGER, text: 'Started from the dashboard Sync button.' }, { cache: false });
       const t = Date.now(); writeStarted(t);
-      busy(true, 'Updating…'); say('Takes about 5 minutes.');
       pollTimer = setTimeout(() => poll(t), 60000);
     } catch (e) { busy(false); say(errorText(e), true); }
-  });
+  }
+  btn.addEventListener('click', startSync);
+  $('h-sync').addEventListener('click', startSync);
   useCap('mcp').then((m) => {
     mcp = m;
-    if (!mcp) { btn.disabled = true; btn.title = 'Open this page on claude.ai to sync'; return; }
+    if (!mcp) { busy(false); btn.title = 'Open this page on claude.ai to sync'; return; }
     const started = readStarted();
-    if (Date.now() - started < 10 * 60 * 1000) { busy(true, 'Updating…'); say('Takes about 5 minutes.'); pollTimer = setTimeout(() => poll(started), 15000); }
+    if (Date.now() - started < 10 * 60 * 1000) { busy(true); say('Syncing… about 5 min'); pollTimer = setTimeout(() => poll(started), 15000); }
     else busy(false);
   }).catch(() => { btn.disabled = true; });
 })();

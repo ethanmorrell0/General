@@ -122,7 +122,12 @@ def test_daily_run_end_to_end(tmp_path, monkeypatch):
     monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-31], {"last_date": "x"}))
     assert R.daily("2023-06-03")["action"] == "NO_NEW_DATA"
     assert st["log"][-1]["note"] == "Day one note"
-    for i, n in enumerate(range(29, -1, -1)):
+    # A second decision on the same calendar day (evening run after a morning run) keeps both.
+    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-29], {"last_date": "x"}))
+    R.daily("2023-06-01")
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert [e["action"] for e in st["log"]][:1] == ["REBALANCE"] and len(st["log"]) == 2
+    for i, n in enumerate(range(28, -1, -1)):
         monkeypatch.setattr(D, "download", lambda start="2014-01-01", n=n: (px.iloc[:len(px) - n], {"last_date": "y"}))
         e = R.daily(f"2023-07-{i + 1:02d}")
         assert e["action"] in {"HOLD", "REBALANCE"}
