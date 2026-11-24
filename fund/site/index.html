@@ -38,6 +38,13 @@
   /* Header */
   .af-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
   .af-title { font-family: var(--font-num); font-weight: 600; font-size: clamp(1.5rem, 4vw, 1.9rem); letter-spacing: -0.01em; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-mark { width: 46px; height: 46px; flex: none; display: block; }
+  .brand-mark .ring { fill: var(--panel); stroke: var(--line); }
+  .brand-mark .half-a { fill: var(--pa); }
+  .brand-mark .half-b { fill: var(--pb); }
+  .brand-mark .rise { fill: none; stroke: var(--panel); stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-sub { font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-top: 1px; }
   .af-sync { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
   .af-sync-msg { font-size: 12.5px; color: var(--muted); text-align: right; max-width: 18rem; }
   .af-sync-msg.is-bad { color: var(--bad); }
@@ -142,7 +149,19 @@
 
 <div class="af">
   <header class="af-head">
-    <h1 class="af-title">Active Equity Fund</h1>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 48 48" role="img" aria-label="Active Equity Fund logo">
+        <circle class="ring" cx="24" cy="24" r="23"/>
+        <path class="half-a" d="M22.6 5 A19 19 0 0 0 22.6 43 Z"/>
+        <path class="half-b" d="M25.4 5 A19 19 0 0 1 25.4 43 Z"/>
+        <polyline class="rise" points="10.5,32 18.5,25 25,29.5 36.5,16.5"/>
+        <polyline class="rise" points="30.5,16 36.5,16.5 36.8,22.5"/>
+      </svg>
+      <div>
+        <h1 class="af-title">Active Equity Fund</h1>
+        <p class="brand-sub">Two pies · one fund</p>
+      </div>
+    </div>
     <div class="af-sync">
       <span class="af-sync-msg" id="sync-msg">Updates automatically every weekday.</span>
       <button type="button" class="btn small" id="sync-btn" disabled><span class="spin" id="sync-spin" hidden></span><span id="sync-label">Sync now</span></button>
