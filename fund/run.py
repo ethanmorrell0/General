@@ -101,6 +101,8 @@ def daily(today: str | None = None) -> dict:
         # dashboard untouched; only record that we checked.
         state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         state["last_run_action"] = "NO_NEW_DATA"
+        from . import details
+        details.update(state, px)
         save(state)
         return {"run_date": run_date, "data_date": data_date, "action": "NO_NEW_DATA",
                 "reasons": [f"No new closing prices since {data_date}; the latest decision stands"],
@@ -227,6 +229,8 @@ def daily(today: str | None = None) -> dict:
     _append_log(state, entry)
     state["last_checked"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     state["last_run_action"] = entry["action"]
+    from . import details
+    details.update(state, px)
     save(state)
     return entry
 

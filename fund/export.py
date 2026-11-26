@@ -38,6 +38,37 @@ def _live_stats(nav: list, key: str) -> dict:
     return {"ret": s[-1] / s[0] - 1, "vol": vol, "maxdd": dd}
 
 
+def _details(st: dict) -> dict:
+    """One record per instrument for the app's detail pages."""
+    from .committee import info
+    from .details import ETF_ABOUT, _yahoo_ticker
+    from .explain import committee_check, logic
+    out = {}
+    stats = st.get("details", {})
+    profiles = st.get("profiles", {})
+    for i, d in stats.items():
+        try:
+            x = info(i)
+        except Exception:  # noqa: BLE001
+            continue
+        t = _yahoo_ticker(i)
+        prof = profiles.get(t, {}) if t else {}
+        pies = []
+        for p in ("A", "B"):
+            tgt = st["pies"][p]["target"]
+            if tgt.get(i):
+                pies.append({"pie": p, "target": tgt[i], "slice": _slices(tgt).get(i)})
+        out[i] = {
+            "id": i, "label": x["label"], "name": C.SHORT_NAMES.get(i) or x.get("name"), "full_name": x.get("full_name") or x.get("name"),
+            "kind": x["kind"], "group": x["group"], "country": prof.get("country") or x.get("country"),
+            "industry": prof.get("industry"), "pies": pies,
+            "about": ETF_ABOUT.get(i) or prof.get("about") or "",
+            "profile": {k: prof.get(k) for k in ("market_cap", "currency", "pe", "forward_pe", "div_yield", "beta", "website")},
+            "stats": d, "logic": logic(i, st), "committee": committee_check(i, st),
+        }
+    return out
+
+
 def build() -> dict[str, list[dict]]:
     st = load_state()
     log, nav, pies = st["log"], st["nav"], st["pies"]
@@ -114,11 +145,11 @@ def build() -> dict[str, list[dict]]:
     for group, key, rows in (("A · Style", "style", sa.get("factors", [])), ("A · Region", "region", sa.get("regions", [])),
                              ("A · Stock", None, sa.get("stocks", []))):
         for r in rows:
-            signals.append({"key": f"{group}:{r['id']}", "group": group, "name": (r.get(key) if key else None) or r["name"],
+            signals.append({"key": f"{group}:{r['id']}", "id": r["id"], "group": group, "name": (r.get(key) if key else None) or r["name"],
                             "rank": r["rank"], "momentum": r.get("mom"), "trend": r.get("trend"), "return_12m": r.get("ret_12m"),
                             "status": "Held" if r["id"] in pies["A"]["target"] else ("Qualifies" if r.get("eligible", True) else "Fails trend filter")})
     for r in sig.get("B") or []:
-        signals.append({"key": f"B:{r['id']}", "group": f"B · {r['sector']}", "name": r["ticker"], "rank": r["rank"],
+        signals.append({"key": f"B:{r['id']}", "id": r["id"], "group": f"B · {r['sector']}", "name": r.get("name") or r["ticker"], "rank": r["rank"],
                         "momentum": r.get("mom12"), "trend": r.get("trend"), "return_12m": r.get("ret_12m"),
                         "status": "Held" if r["id"] in pies["B"]["target"] else "Likely takeover target" if r.get("pinned")
                         else ("Qualifies" if r.get("eligible") else "Fails trend filter")})
@@ -188,7 +219,7 @@ def build() -> dict[str, list[dict]]:
                 return i
         review = {**rv, "items": [{**it, "name": nm(it["id"]), "label": info(it["id"])["label"] if it["id"] != "CASH" else "CASH"}
                                   for it in rv.get("items", [])]}
-    return {"review": review, "summary": summary, "holdings": holdings, "stats": stat_rows, "signals": signals, "log": log_rows,
+    return {"details": _details(st), "review": review, "summary": summary, "holdings": holdings, "stats": stat_rows, "signals": signals, "log": log_rows,
             "nav": nav_rows, "mandate": mandate, "bt_metrics": bt_metrics, "bt_curve": bt_curve}
 
 

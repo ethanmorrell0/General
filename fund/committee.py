@@ -216,6 +216,12 @@ def apply(path: str) -> dict:
                              "reason": decisions[k].get("reason", "")}
         changes.append({"pie": p, "out": k, "out_name": info(k)["name"], "in": dest,
                         "in_name": "Cash" if dest == "CASH" else info(dest)["name"], "pct_of_pie": w, "decision": d})
+    # Vetoed or delayed reserves (and anything else not swapped above) are excluded too,
+    # so the rules can't pick them up on a later day.
+    for k, it in decisions.items():
+        d = it.get("decision")
+        if d in DAYS and k not in st["excluded"]:
+            st["excluded"][k] = {"decision": d, "until": _add_days(e["data_date"], DAYS[d]), "reason": it.get("reason", "")}
     for p in ("A", "B"):
         pie = st["pies"][p]
         total = _value(pie["units"], {**prices, "CASH": 1.0}) if pie["units"] else 0

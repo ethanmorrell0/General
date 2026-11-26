@@ -179,6 +179,40 @@
   details.checks > summary { cursor: pointer; list-style: none; font-weight: 700; font-size: 13.5px; color: var(--accent); }
   details.checks > summary::-webkit-details-marker { display: none; }
 
+  /* Detail sheet */
+  [data-id] { cursor: pointer; }
+  .row[data-id]:hover, .sig-row[data-id]:hover { background: color-mix(in srgb, var(--chip) 60%, transparent); }
+  .row[data-id] .rt::after, .sig-row[data-id] .chip::after { content: ""; }
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; background: var(--bg2); border-radius: 24px 24px 0 0; border-top: 1px solid var(--line);
+    padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); box-shadow: 0 -10px 40px rgba(0,0,0,.35); }
+  @media (prefers-reduced-motion: no-preference) { .sheet:not([hidden]) { animation: up .22s ease-out; } }
+  @keyframes up { from { transform: translateY(30px); opacity: .4; } to { transform: none; opacity: 1; } }
+  @media (min-width: 720px) { .sheet { left: 50%; right: auto; width: 600px; transform: translateX(-50%); bottom: 4vh; border-radius: 24px; border: 1px solid var(--line); max-height: 92vh; }
+    @media (prefers-reduced-motion: no-preference) { .sheet:not([hidden]) { animation: none; } } }
+  .sheet-in { max-width: 600px; margin-inline: auto; display: flex; flex-direction: column; gap: 14px; }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 4px; }
+  .sh-head { display: grid; grid-template-columns: 48px 1fr 40px; gap: 12px; align-items: center; }
+  .sh-head .av { width: 48px; height: 48px; border-radius: 14px; font-size: 12px; }
+  .sh-name { font-size: 19px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; }
+  .sh-sub { font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+  .sh-price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .sh-price b { font-size: 28px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .sh-spark { height: 120px; position: relative; }
+  .sh-spark svg { display: block; }
+  .rets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .ret { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 9px 8px; text-align: center; }
+  .ret .k { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .ret .v { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .kv { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kv div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .kv .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .kv .v { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .sh-sec { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .sh-sec h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .sh-sec p { font-size: 14px; line-height: 1.6; }
+  .sh-sec a { color: var(--accent); font-weight: 700; text-decoration: none; font-size: 13px; }
+
   /* Pies */
   .donut-wrap { display: grid; grid-template-columns: 170px 1fr; gap: 18px; align-items: center; }
   @media (max-width: 440px) { .donut-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; } .donut-wrap .chips { justify-content: center; } }
@@ -405,6 +439,27 @@
   </section>
 </main>
 
+<div class="sheet-bg" id="sheet-bg" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-name" hidden>
+  <div class="sheet-in">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="sh-head">
+      <span class="av" id="sh-av"></span>
+      <div style="min-width:0"><div class="sh-name" id="sh-name"></div><div class="sh-sub" id="sh-sub"></div></div>
+      <button type="button" class="icon-btn" id="sh-close" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="chips" id="sh-chips"></div>
+    <div class="sh-price"><b id="sh-1y"></b><span class="muted" style="font-size:13px" id="sh-1y-l">over the last year</span></div>
+    <div class="sh-spark" id="sh-spark"></div>
+    <div class="rets" id="sh-rets"></div>
+    <div class="kv" id="sh-kv"></div>
+    <div class="sh-sec"><h3 id="sh-why-h">Why it’s in the fund</h3><p id="sh-why"></p></div>
+    <div class="sh-sec" id="sh-cmte-box"><h3>Committee check</h3><div id="sh-cmte"></div></div>
+    <div class="sh-sec" id="sh-about-box"><h3>About</h3><p id="sh-about"></p><div id="sh-links"></div></div>
+    <p class="fine" id="sh-foot"></p>
+  </div>
+</section>
+
 <nav class="tabbar" aria-label="Sections">
   <div class="tabbar-in">
     <button type="button" class="tab" data-go="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>Home</button>
@@ -541,6 +596,101 @@
     svg.append('circle').attr('cx', x(last.d)).attr('cy', y(last.v)).attr('r', 4).attr('fill', css('--accent'));
   }
 
+  // ---------- detail sheet ----------
+  let lastFocus = null;
+  const money = (v, ccy) => {
+    if (v === null || v === undefined) return null;
+    const sym = { USD: '$', GBP: '£', GBp: '£', EUR: '€', CHF: 'CHF ' }[ccy] ?? '';
+    const a = Math.abs(v);
+    const t = a >= 1e12 ? d3.format('.2f')(v / 1e12) + 'tn' : a >= 1e9 ? d3.format('.1f')(v / 1e9) + 'bn' : d3.format('.0f')(v / 1e6) + 'm';
+    return sym + t;
+  };
+  function openDetail(id) {
+    const d = S.data && S.data.details && S.data.details[id];
+    if (!d) return;
+    lastFocus = document.activeElement;
+    const pieColor = d.pies.length ? css(d.pies[0].pie === 'A' ? '--pa' : '--pb') : css(id.startsWith('B_') ? '--pb' : '--pa');
+    const av = $('sh-av'); av.className = 'av';
+    av.textContent = String(d.label).replace(/\..*$/, '').replace(/-.*$/, '').slice(0, 4);
+    av.style.background = pieColor; av.style.color = d3.hsl(pieColor).l > 0.55 ? '#10201a' : '#ffffff';
+    $('sh-name').textContent = d.name;
+    $('sh-sub').textContent = [d.label, d.kind === 'ETF' ? 'Fund' : d.industry || d.group, d.country && d.country !== 'fund' ? d.country : null].filter(Boolean).join(' · ');
+    const chips = [];
+    if (d.pies.length) d.pies.forEach((p) => chips.push(el('span', 'chip ' + (p.pie === 'A' ? 'a' : 'b'), `Pie ${p.pie} · ${p.slice ?? p.target}% slice`)));
+    else chips.push(el('span', 'chip', 'Not held'));
+    if (d.committee) chips.push(el('span', 'chip ' + (d.committee.decision === 'approve' ? 'ok' : 'bad'), d.committee.decision === 'approve' ? 'Committee approved' : d.committee.decision === 'veto' ? 'Committee vetoed' : 'Committee delayed'));
+    $('sh-chips').replaceChildren(...chips);
+    const st = d.stats || {};
+    $('sh-1y').textContent = pct1(st.r_1Y); $('sh-1y').className = sign(st.r_1Y);
+    // spark
+    const box = $('sh-spark'); box.replaceChildren();
+    const pts = (st.spark || []).map((v, i) => ({ i, v }));
+    if (pts.length > 1) {
+      const W = Math.max(260, box.clientWidth || 320), H = 120;
+      const x = d3.scaleLinear([0, pts.length - 1], [2, W - 2]);
+      const y = d3.scaleLinear(d3.extent(pts, (p) => p.v), [H - 6, 6]);
+      const up = pts[pts.length - 1].v >= pts[0].v;
+      const c = css(up ? '--ok' : '--bad');
+      const svg = d3.select(box).append('svg').attr('width', '100%').attr('height', H).attr('viewBox', `0 0 ${W} ${H}`).attr('preserveAspectRatio', 'none');
+      const gid = 'sg' + Math.random().toString(36).slice(2, 7);
+      const gr = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('x2', 0).attr('y1', 0).attr('y2', 1);
+      [[0, 0.3], [1, 0]].forEach(([o, a]) => gr.append('stop').attr('offset', o).attr('stop-color', c).attr('stop-opacity', a));
+      svg.append('line').attr('x1', 0).attr('x2', W).attr('y1', y(100)).attr('y2', y(100)).attr('stroke', css('--line')).attr('stroke-dasharray', '3 4');
+      svg.append('path').datum(pts).attr('fill', `url(#${gid})`).attr('d', d3.area().x((p) => x(p.i)).y0(H).y1((p) => y(p.v)));
+      svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', c).attr('stroke-width', 2.2).attr('stroke-linejoin', 'round').attr('d', d3.line().x((p) => x(p.i)).y((p) => y(p.v)));
+    }
+    const R = [['1W', st.r_1W], ['1M', st.r_1M], ['3M', st.r_3M], ['6M', st.r_6M], ['YTD', st.r_YTD], ['1Y', st.r_1Y], ['3Y a yr', st.r_3Y_pa]];
+    $('sh-rets').replaceChildren(...R.filter(([, v]) => v !== null && v !== undefined).map(([k, v]) => {
+      const t = el('div', 'ret'); t.append(el('div', 'k', k), el('div', 'v ' + sign(v), pct1(v))); return t;
+    }));
+    const pr = d.profile || {};
+    const KV = [
+      ['Volatility (1 yr)', st.vol_1y !== undefined ? p1(st.vol_1y) : null],
+      ['Worst fall (1 yr)', st.maxdd_1y !== undefined ? p1(st.maxdd_1y) : null, st.maxdd_1y < -0.0005 ? 'neg' : ''],
+      ['From 52-week high', st.from_high !== undefined ? pct1(st.from_high) : null, sign(st.from_high)],
+      ['vs 200-day average', st.trend_200 !== undefined && st.trend_200 !== null ? pct1(st.trend_200) : null, sign(st.trend_200)],
+      ['Market value', money(pr.market_cap, pr.currency)],
+      ['P/E ratio', pr.pe ? d3.format('.1f')(pr.pe) : null],
+      ['Dividend yield', pr.div_yield ? p1(pr.div_yield) : null],
+      ['Beta (vs market)', pr.beta ? d3.format('.2f')(pr.beta) : null],
+    ].filter((r) => r[1] !== null && r[1] !== undefined);
+    $('sh-kv').replaceChildren(...KV.map(([k, v, c]) => { const t = el('div'); t.append(el('span', 'k', k), el('span', 'v ' + (c || ''), v)); return t; }));
+    $('sh-why-h').textContent = d.pies.length ? 'Why it’s in the fund' : 'Why it isn’t held';
+    $('sh-why').textContent = d.logic || '';
+    $('sh-cmte-box').hidden = !d.committee;
+    if (d.committee) {
+      const wrap = el('div');
+      const line = el('p'); line.append(el('b', null, `${fmtDay(d.committee.date)}: `), document.createTextNode(d.committee.reason || ''));
+      wrap.append(line);
+      (d.committee.sources || []).forEach((u, k) => { const a = el('a', null, `Source ${k + 1} ↗`); a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.style.marginRight = '12px'; wrap.append(a); });
+      $('sh-cmte').replaceChildren(wrap);
+    }
+    $('sh-about').textContent = d.about || '';
+    $('sh-about-box').hidden = !d.about;
+    const links = $('sh-links'); links.replaceChildren();
+    if (pr.website) { const a = el('a', null, 'Company website ↗'); a.href = pr.website; a.target = '_blank'; a.rel = 'noopener'; links.append(a); }
+    $('sh-foot').textContent = `Returns in pounds including dividends, to the ${fmtDay(st.as_of)} close. Company figures from Yahoo Finance.`;
+    $('sheet').hidden = false; $('sheet-bg').hidden = false; $('sheet').scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    $('sh-close').focus();
+  }
+  function closeDetail() {
+    if ($('sheet').hidden) return;
+    $('sheet').hidden = true; $('sheet-bg').hidden = true; document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  $('sh-close').addEventListener('click', closeDetail);
+  $('sheet-bg').addEventListener('click', closeDetail);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDetail();
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('[data-id]') && e.target.closest('[data-id]') === e.target) { e.preventDefault(); openDetail(e.target.dataset.id); }
+  });
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest && e.target.closest('[data-id]');
+    if (t && !e.target.closest('a,button:not([data-id])')) openDetail(t.dataset.id);
+  });
+  const tappable = (node, id) => { if (id && S.data.details && S.data.details[id]) { node.dataset.id = id; node.tabIndex = 0; node.setAttribute('role', 'button'); } return node; };
+
   // ---------- committee ----------
   function renderCommittee() {
     const R = S.data.review;
@@ -571,7 +721,7 @@
       (i.sources || []).filter((u) => /^https?:/.test(u)).slice(0, 2).forEach((u, k) => {
         const a = el('a', null, ` source${(i.sources.length > 1) ? ' ' + (k + 1) : ''}`); a.href = u; a.target = '_blank'; a.rel = 'noopener'; why.append(' ·', a);
       });
-      r.append(why); return r;
+      r.append(why); return tappable(r, i.id);
     }));
   }
 
@@ -613,7 +763,7 @@
       const rt = el('div', 'rt', (h.slice ?? h.target) + '%');
       if (v && S.contribs.length && h.id !== 'CASH') rt.append(el('small', null, gbp((p === 'A' ? v.a : v.b) * (Number(h.current) || h.target) / 100)));
       r.append(avatar(h.id, colors[i]), mid, rt);
-      return r;
+      return tappable(r, String(h.key).split(':')[1]);
     }));
   }
   document.querySelectorAll('.pie-seg').forEach((b) => b.addEventListener('click', () => {
@@ -681,7 +831,7 @@
         const mid = el('div'); mid.style.minWidth = '0';
         mid.append(el('div', 'nm', h.id === 'CASH' ? 'Keep as cash' : h.name), el('div', 'sub', h.id === 'CASH' ? 'outside the pie' : `${h.id} · ${h.slice}% slice`));
         r.append(avatar(h.id, h.color), mid, el('div', 'rt', gbp(h.amt)));
-        rows.push(r);
+        rows.push(tappable(r, String(h.key).split(':')[1]));
       });
     });
     $('plan-rows').replaceChildren(...rows);
@@ -770,7 +920,7 @@
       const cls = r.status === 'Held' ? 'ok' : /takeover/.test(r.status) ? 'bad' : /Fails/.test(r.status) ? '' : 'warn';
       const label = r.status === 'Held' ? 'Held' : /takeover/.test(r.status) ? 'Takeover' : /Fails/.test(r.status) ? 'Downtrend' : 'Candidate';
       row.append(el('span', 'rank', '#' + r.rank), mid, el('span', 'chip ' + cls, label));
-      return row;
+      return tappable(row, r.id);
     }));
   }
   document.querySelectorAll('.sig-seg').forEach((b) => b.addEventListener('click', () => {

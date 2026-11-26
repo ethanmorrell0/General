@@ -10,6 +10,12 @@ from fund import config as C
 from fund import model as M
 from fund import run as R
 
+@pytest.fixture(autouse=True)
+def _no_profiles(monkeypatch):
+    from fund import details
+    monkeypatch.setattr(details, "refresh_profiles", lambda *a, **k: None)
+
+
 IDS = [C.CORE["id"]] + [x["id"] for x in C.FACTORS + C.REGIONS + C.STOCKS + C.B_STOCKS] + [C.DEFENSIVE["gold"]["id"]]
 
 
