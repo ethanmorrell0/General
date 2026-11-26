@@ -63,6 +63,15 @@ a position is ≥3pp and ≥25% of its size off target, or total drift ≥8pp.
 - `dashboard/index.html` — the dashboard page (stored in the artifact)
 - `tests/` — logic tests on synthetic prices: `python -m pytest -q fund/tests`
 
+## Investment committee
+
+The rules pick the trades; a committee of Claude agents checks every buy before it
+reaches you, for what rules can't see: takeovers, profit warnings, fraud, delistings,
+broken price data and concentration. It meets only on decision days with buys, can
+only approve, delay or veto, never picks stocks and never blocks a sale. Vetoed pie A
+buys go to the All-World core; vetoed pie B buys go to the first approved reserve
+(else cash). Briefs: `fund/committee_briefs/`. Code: `fund/committee.py`.
+
 ## Daily routine (what the scheduled runs and the Sync button do)
 
 Runs at 22:35 UK on weekdays (after the US close, so the day's close is in),
@@ -87,6 +96,12 @@ show money invested, estimated value and where new cash should go.
    completed trading days, so a 10am run decides on the previous close.
 5. On the first run of a calendar month (or if `backtest.json` is missing), run
    `python -m fund.backtest`.
+5b. **Investment committee.** If `python3 -m fund.committee needed` prints `yes`
+   (a rebalance or first build with buys not yet reviewed), convene the committee as
+   `fund/committee_briefs/README.md` describes: three analyst agents in parallel (news,
+   data, risk), a reviewer, then a CIO whose verdict is applied with
+   `python3 -m fund.committee apply fund/state/verdict.json`. It can only approve, delay
+   (7 days) or veto (30 days) a buy. Skip this step otherwise.
 6. Read `fund/state/data.json`. Write a plain-English note of 2–6 short sentences
    covering both pies: each pie's decision and the signal behind it, any money to
    move between the pies, and anything worth watching. No hype, no predictions.

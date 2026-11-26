@@ -15,7 +15,7 @@ FACTORS = [
     {"id": "IWFM", "name": "iShares MSCI World Momentum Factor", "style": "Momentum", "tickers": ["IWFM.L", "IWMO.L"]},
     {"id": "IWFQ", "name": "iShares MSCI World Quality Factor", "style": "Quality", "tickers": ["IWFQ.L", "IWQU.L"]},
     {"id": "IWFV", "name": "iShares MSCI World Value Factor", "style": "Value", "tickers": ["IWFV.L", "IWVL.L"]},
-    {"id": "IWFS", "name": "iShares MSCI World Size Factor", "style": "Small-cap", "tickers": ["IWFS.L", "IWSZ.L"]},
+    {"id": "IWFS", "name": "iShares MSCI World Mid-Cap Equal Weight (formerly Size Factor)", "style": "Small-cap", "tickers": ["IWFS.L", "IWSZ.L"]},
 ]
 
 # Regional tilts. The strongest trending regions get an overweight.
@@ -221,6 +221,6 @@ for _s in B_STOCKS:
 # Short names for pie A's funds, so dashboard tiles stay readable.
 SHORT_NAMES = {
     "VWRP": "All-World (core)", "IWFV": "World Value", "IWFQ": "World Quality", "IWFM": "World Momentum",
-    "IWFS": "World Size", "VUAG": "S&P 500", "VERG": "Europe ex UK", "VUKG": "FTSE 100", "VJPN": "Japan",
+    "IWFS": "World Mid-Cap EW", "VUAG": "S&P 500", "VERG": "Europe ex UK", "VUKG": "FTSE 100", "VJPN": "Japan",
     "VFEG": "Emerging Markets", "VAPX": "Asia Pacific ex Japan", "SGLN": "Physical Gold",
 }

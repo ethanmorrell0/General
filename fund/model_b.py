@@ -54,7 +54,7 @@ def _z(x: np.ndarray) -> np.ndarray:
     return (ranks - 0.5) * math.sqrt(12)
 
 
-def allocate_b(px: pd.DataFrame, prev: dict[str, float] | None = None, universe=None) -> dict:
+def allocate_b(px: pd.DataFrame, prev: dict[str, float] | None = None, universe=None, exclude=frozenset()) -> dict:
     prev = prev or {}
     P = C.B
     universe = universe if universe is not None else C.B_STOCKS
@@ -82,6 +82,9 @@ def allocate_b(px: pd.DataFrame, prev: dict[str, float] | None = None, universe=
         r["eligible"] = (r["trend"] > -P["slack_trend"] and r["rank"] <= P["keep_rank"]) if held else (r["trend"] > 0 and r["mom12"] > 0)
         if r["pinned"]:
             r["eligible"] = False  # likely an agreed takeover: little upside left
+        r["vetoed"] = r["id"] in exclude
+        if r["vetoed"]:
+            r["eligible"] = False  # the investment committee vetoed or delayed it
 
     # Keep holdings that still qualify, then fill with the best new names,
     # respecting the sector cap (counted in slots of an equal-weight pie).

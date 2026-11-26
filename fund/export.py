@@ -130,6 +130,7 @@ def build() -> dict[str, list[dict]]:
         "run_date": e["run_date"], "action": e["action"],
         "a_action": e.get("pies", {}).get("A", {}).get("action", ""), "b_action": e.get("pies", {}).get("B", {}).get("action", ""),
         "trades": trades_text(e.get("trades", {})), "note": e.get("note", ""), "reasons": " · ".join(e.get("reasons", [])),
+        "committee": e.get("committee"),
     } for e in log[::-1][:120]]
 
     nav_rows = [{"date": n["date"], "total": n["total"], "a": n["A"], "b": n["B"], "bench": n["bench"]} for n in nav]
@@ -176,7 +177,18 @@ def build() -> dict[str, list[dict]]:
                      "total": series.get("total", {}).get(p["date"]), "b": series.get("b", {}).get(p["date"]),
                      "a_fair": series.get("pit", {}).get(p["date"]), "bench": p["bench"]} for p in base]
 
-    return {"summary": summary, "holdings": holdings, "stats": stat_rows, "signals": signals, "log": log_rows,
+    review = None
+    if st.get("reviews"):
+        rv = st["reviews"][-1]
+        from .committee import info
+        def nm(i):
+            try:
+                return info(i)["name"]
+            except Exception:  # noqa: BLE001
+                return i
+        review = {**rv, "items": [{**it, "name": nm(it["id"]), "label": info(it["id"])["label"] if it["id"] != "CASH" else "CASH"}
+                                  for it in rv.get("items", [])]}
+    return {"review": review, "summary": summary, "holdings": holdings, "stats": stat_rows, "signals": signals, "log": log_rows,
             "nav": nav_rows, "mandate": mandate, "bt_metrics": bt_metrics, "bt_curve": bt_curve}
 
 

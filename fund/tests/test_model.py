@@ -138,3 +138,35 @@ def test_daily_run_end_to_end(tmp_path, monkeypatch):
         assert sum(st["pies"][p]["target"].values()) == 100
     share = st["nav"][-1]["A_val"] / (st["nav"][-1]["A_val"] + st["nav"][-1]["B_val"])
     assert abs(share - 0.5) < 0.06
+
+
+def test_committee_veto_swaps_and_sticks(tmp_path, monkeypatch):
+    from fund import committee as CM
+    monkeypatch.setattr(R, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(R, "DATA", tmp_path / "data.json")
+    px = fake_prices()
+    import fund.data as D
+    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-5], {"last_date": "x"}))
+    e = R.daily("2023-06-01")
+    assert CM.needed()
+    st = json.loads((tmp_path / "state.json").read_text())
+    b_buy = next(k for k in e["pies"]["B"]["trades"] if k != "CASH")
+    a_stock = next((k for k in e["pies"]["A"]["trades"] if k in {s["id"] for s in C.STOCKS}), None)
+    items = [{"id": b_buy, "decision": "veto", "reason": "test"}]
+    if a_stock:
+        items.append({"id": a_stock, "decision": "delay", "reason": "test"})
+    items += [{"id": r, "decision": "approve"} for r in CM._reserves(st)]
+    vf = tmp_path / "verdict.json"
+    vf.write_text(json.dumps({"data_date": e["data_date"], "summary": "test", "items": items}))
+    CM.apply(str(vf))
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert b_buy not in st["pies"]["B"]["target"] and sum(st["pies"]["B"]["target"].values()) == 100
+    assert sum(st["pies"]["A"]["target"].values()) == 100
+    assert b_buy in st["excluded"] and not CM.needed()
+    if a_stock:
+        assert a_stock not in st["pies"]["A"]["target"]
+    # The veto holds on the next run: the vetoed stock isn't bought back.
+    monkeypatch.setattr(D, "download", lambda start="2014-01-01": (px.iloc[:-4], {"last_date": "y"}))
+    R.daily("2023-06-02")
+    st = json.loads((tmp_path / "state.json").read_text())
+    assert b_buy not in st["pies"]["B"]["target"]

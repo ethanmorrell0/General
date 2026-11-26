@@ -97,8 +97,10 @@ def regime(px: pd.DataFrame, prev_level: int | None = None) -> dict:
             "defensive_pct": C.DEFENSIVE_LEVELS[len(warnings)]}
 
 
-def allocate(px: pd.DataFrame, prev: dict[str, float] | None = None, prev_level: int | None = None) -> dict:
-    """Return target weights (whole percent) plus the signals behind them."""
+def allocate(px: pd.DataFrame, prev: dict[str, float] | None = None, prev_level: int | None = None,
+             exclude=frozenset()) -> dict:
+    """Return target weights (whole percent) plus the signals behind them.
+    `exclude`: ids the investment committee has vetoed or delayed; never picked."""
     prev = prev or {}
     core = C.CORE["id"]
     w: dict[str, float] = {core: C.WEIGHTS["core"]}
@@ -107,7 +109,7 @@ def allocate(px: pd.DataFrame, prev: dict[str, float] | None = None, prev_level:
     # 1. Styles: rank by performance relative to the All-World index.
     fac = []
     for f in C.FACTORS:
-        if f["id"] in px and core in px:
+        if f["id"] in px and core in px and f["id"] not in exclude:
             s = stats(px, f["id"], rel_to=core)
             if s:
                 # Incumbents keep their slot unless clearly beaten.
@@ -133,7 +135,7 @@ def allocate(px: pd.DataFrame, prev: dict[str, float] | None = None, prev_level:
     reg.sort(key=lambda x: x["score"], reverse=True)
     for i, r in enumerate(reg):
         r["rank"] = i + 1
-        r["eligible"] = _eligible(r, prev)
+        r["eligible"] = _eligible(r, prev) and r["id"] not in exclude
     picks = _pick(reg, prev, len(C.WEIGHTS["regions"]), C.KEEP_RANK["regions"])
     for i, wt in enumerate(C.WEIGHTS["regions"]):
         if i < len(picks):
@@ -152,7 +154,7 @@ def allocate(px: pd.DataFrame, prev: dict[str, float] | None = None, prev_level:
     stk.sort(key=lambda x: x["score"], reverse=True)
     for i, st in enumerate(stk):
         st["rank"] = i + 1
-        st["eligible"] = _eligible(st, prev)
+        st["eligible"] = _eligible(st, prev) and st["id"] not in exclude
     spicks = _pick(stk, prev, len(C.WEIGHTS["stocks"]), C.KEEP_RANK["stocks"])
     for i, wt in enumerate(C.WEIGHTS["stocks"]):
         if i < len(spicks):

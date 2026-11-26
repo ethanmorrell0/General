@@ -132,8 +132,11 @@ def daily(today: str | None = None) -> dict:
     current_total = combined(current["A"], current["B"], 100 * vals["A"] / total_before)
 
     # Each pie's own decision.
-    res = {"A": M.allocate(px, prev=pies["A"]["target"], prev_level=pies["A"]["level"]),
-           "B": MB.allocate_b(px, prev=pies["B"]["target"])}
+    # Committee vetoes and delays stay in force until their end date.
+    state["excluded"] = {k: v for k, v in state.get("excluded", {}).items() if v["until"] >= data_date}
+    excl = frozenset(state["excluded"])
+    res = {"A": M.allocate(px, prev=pies["A"]["target"], prev_level=pies["A"]["level"], exclude=excl),
+           "B": MB.allocate_b(px, prev=pies["B"]["target"], exclude=excl)}
     params = {"A": {}, "B": {"trigger": C.B["trigger"], "min_days": C.B["min_days"]}}
     min_days = {"A": C.MIN_DAYS_BETWEEN, "B": C.B["min_days"]}
     decision = {}
@@ -213,6 +216,7 @@ def daily(today: str | None = None) -> dict:
     state["last_data_date"] = data_date
     state["signals"] = {"A": _signal_snapshot_a(res["A"]), "B": _signal_snapshot_b(res["B"])}
     state["meta"] = meta
+    state["last_prices"] = {k: round(v, 6) for k, v in prices.items()}
     reasons = (["First allocation: build both pies from cash"] if first else
                split_why + [f"Pie {p}: " + w for p in PIES for w in decision[p]["why"] if not w.startswith("Pie A is")])
     entry = {"run_date": run_date, "data_date": data_date, "action": "REBALANCE" if any_trade else "HOLD",
@@ -259,7 +263,7 @@ def _signal_snapshot_a(res: dict) -> dict:
 
 
 def _signal_snapshot_b(res: dict) -> list:
-    keys = ["id", "ticker", "sector", "rank", "score", "mom12", "mom6", "high52", "vol", "trend", "ret_12m", "eligible", "held", "pinned"]
+    keys = ["id", "ticker", "name", "sector", "rank", "score", "mom12", "mom6", "high52", "vol", "trend", "ret_12m", "eligible", "held", "pinned", "vetoed"]
     return [{k: _r(r.get(k)) for k in keys} for r in res["ranked"][:40]]
 
 

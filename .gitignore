@@ -9,3 +9,5 @@ fund/state/state.json
 fund/state/data.json
 fund/state/backtest.json
 fund/site/data.json
+fund/state/review_packet.json
+fund/state/verdict.json

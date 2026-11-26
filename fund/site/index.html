@@ -162,6 +162,23 @@
   .group-h.b::before { background: var(--pb); }
   .toast { background: var(--ok-soft); color: var(--ok); border-radius: 12px; padding: 12px 14px; font-weight: 700; font-size: 14px; }
 
+  /* Committee */
+  .cmte-h { display: flex; align-items: center; gap: 12px; }
+  .cmte-ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; flex: none; background: var(--chip); }
+  .cmte-ic svg { width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .cmte.has-changes .cmte-ic { background: var(--warn-soft); } .cmte.has-changes .cmte-ic svg { stroke: var(--warn); }
+  .cmte-title { font-size: 17px; font-weight: 800; }
+  .cmte-sum { font-size: 14px; color: var(--muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  .cmte-sum.open { -webkit-line-clamp: unset; display: block; color: var(--fg); }
+  .flag { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13.5px; line-height: 1.5; padding: 8px 0; border-top: 1px solid var(--line); }
+  .flag::before { content: "!"; width: 22px; height: 22px; border-radius: 50%; background: var(--warn-soft); color: var(--warn); font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+  .flag b { font-weight: 800; }
+  .check-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .check-row .why { grid-column: 1 / -1; color: var(--muted); line-height: 1.45; }
+  .check-row a { color: var(--accent); font-weight: 700; text-decoration: none; }
+  details.checks > summary { cursor: pointer; list-style: none; font-weight: 700; font-size: 13.5px; color: var(--accent); }
+  details.checks > summary::-webkit-details-marker { display: none; }
+
   /* Pies */
   .donut-wrap { display: grid; grid-template-columns: 170px 1fr; gap: 18px; align-items: center; }
   @media (max-width: 440px) { .donut-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; } .donut-wrap .chips { justify-content: center; } }
@@ -252,6 +269,17 @@
         <p class="status-note" id="h-note"></p>
         <button type="button" class="link" id="h-note-btn" style="align-self:flex-start">Read more</button>
       </div>
+    </div>
+
+    <div class="card cmte" id="cmte" hidden>
+      <div class="cmte-h">
+        <div class="cmte-ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div style="min-width:0"><div class="cmte-title" id="cmte-title">Committee review</div><div class="faint" style="font-size:12.5px" id="cmte-meta"></div></div>
+      </div>
+      <p class="cmte-sum" id="cmte-sum"></p>
+      <div id="cmte-changes" class="chips"></div>
+      <div id="cmte-flags"></div>
+      <details class="checks"><summary id="cmte-all">See every check ›</summary><div id="cmte-more-flags"></div><div id="cmte-items"></div></details>
     </div>
 
     <div class="actions">
@@ -485,6 +513,7 @@
     $('brand-sub').textContent = `${fmtDate(r.data_date)} close`;
     renderSpark();
   }
+  $('cmte-sum').addEventListener('click', () => $('cmte-sum').classList.toggle('open'));
   $('h-note-btn').addEventListener('click', () => {
     const open = $('h-note').classList.toggle('open');
     $('h-note-btn').textContent = open ? 'Show less' : 'Read more';
@@ -510,6 +539,40 @@
     svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', css('--accent')).attr('stroke-width', 2.5).attr('stroke-linecap', 'round').attr('d', d3.line().x((p) => x(p.d)).y((p) => y(p.v)));
     const last = pts[pts.length - 1];
     svg.append('circle').attr('cx', x(last.d)).attr('cy', y(last.v)).attr('r', 4).attr('fill', css('--accent'));
+  }
+
+  // ---------- committee ----------
+  function renderCommittee() {
+    const R = S.data.review;
+    $('cmte').hidden = !R;
+    if (!R) return;
+    const items = R.items || [], changes = R.changes || [];
+    const approved = items.filter((i) => i.decision === 'approve').length;
+    $('cmte').classList.toggle('has-changes', changes.length > 0);
+    $('cmte-title').textContent = changes.length ? `Committee changed ${changes.length} buy${changes.length > 1 ? 's' : ''}` : `Committee approved every buy`;
+    $('cmte-meta').textContent = `Reviewed ${fmtDay(R.data_date)} close · news, data and risk checks · ${approved} of ${items.length} approved`;
+    $('cmte-sum').textContent = R.summary || '';
+    $('cmte-changes').replaceChildren(...changes.map((c) => el('span', 'chip warn', `${c.decision === 'veto' ? 'Vetoed' : 'Delayed'} ${c.out_name} → ${c.in_name}`)));
+    const flagEl = (f) => {
+      const d = el('div', 'flag'); const t = el('div');
+      const it = items.find((i) => i.id === f.id);
+      if (f.id !== 'fund') t.append(el('b', null, (it && it.name ? it.name : f.id) + ': '));
+      t.append(document.createTextNode(f.note)); d.append(t); return d;
+    };
+    const flags = R.flags || [];
+    $('cmte-flags').replaceChildren(...flags.slice(0, 3).map(flagEl));
+    $('cmte-more-flags').replaceChildren(...flags.slice(3).map(flagEl));
+    $('cmte-all').textContent = flags.length > 3 ? `See ${flags.length - 3} more notes and all ${items.length} checks ›` : `See all ${items.length} checks ›`;
+    $('cmte-items').replaceChildren(...items.map((i) => {
+      const r = el('div', 'check-row');
+      r.append(el('b', null, `${i.name || i.id}${i.label ? ' · ' + i.label : ''}`),
+        el('span', 'chip ' + (i.decision === 'approve' ? 'ok' : 'warn'), i.decision === 'approve' ? 'Approved' : i.decision === 'veto' ? 'Vetoed' : 'Delayed'));
+      const why = el('span', 'why', i.reason || '');
+      (i.sources || []).filter((u) => /^https?:/.test(u)).slice(0, 2).forEach((u, k) => {
+        const a = el('a', null, ` source${(i.sources.length > 1) ? ' ' + (k + 1) : ''}`); a.href = u; a.target = '_blank'; a.rel = 'noopener'; why.append(' ·', a);
+      });
+      r.append(why); return r;
+    }));
   }
 
   // ---------- avatars ----------
@@ -780,6 +843,7 @@
       if (r.a_action) head.append(el('span', 'chip a', 'A ' + (word[r.a_action] || '').toLowerCase()));
       if (r.b_action) head.append(el('span', 'chip b', 'B ' + (word[r.b_action] || '').toLowerCase()));
       body.append(head);
+      if (r.committee) body.append(el('span', 'chip ' + (r.committee.changes && r.committee.changes.length ? 'warn' : 'ok'), r.committee.changes && r.committee.changes.length ? `Committee: ${r.committee.changes.length} changed` : 'Committee approved'));
       if (r.trades) body.append(el('span', 'trades', r.trades));
       if (r.note) {
         const n = el('p', 'tl-note', r.note);
@@ -792,7 +856,7 @@
 
   function renderAll() {
     if (!S.data) return;
-    renderHome(); renderHistory(); renderActivity();
+    renderHome(); renderCommittee(); renderHistory(); renderActivity();
     if (S.view === 'pies') renderPies();
     if (S.view === 'insights') renderInsights();
     $('amt').placeholder = S.contribs.length ? '0' : '160';
