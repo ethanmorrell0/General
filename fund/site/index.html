@@ -325,6 +325,7 @@
     <div class="card">
       <div class="card-h"><h2>Pie balance</h2><span class="chip ok" id="h-split-chip">On target</span></div>
       <div class="splitbar" id="h-splitbar"><span style="width:50%;background:var(--pa)"></span><span style="width:50%;background:var(--pb)"></span></div>
+      <p class="fine" id="h-cash" hidden></p>
       <div class="split-legend">
         <div><span class="chip a">Pie A · Index +2%</span><b id="h-a-val">—</b></div>
         <div style="text-align:right"><span class="chip b">Pie B · Stocks</span><b id="h-b-val">—</b></div>
@@ -531,6 +532,12 @@
   // Value of one holding: recorded buys (grown with the pie's index) when every payment
   // lists its buys; otherwise the pie's estimated value times the model's weight.
   const tick = (x) => String(x).replace(/^B_/, '').replace(/\..*$/, '').replace(/-.*$/, '');
+  // Cash held outside the pies for pie p (its defensive slice).
+  function cashOutside(p) {
+    const h = S.data.holdings.find((x) => x.pie === p && x.id === 'CASH');
+    if (!h) return 0;
+    return holdingValue(p, h, current()) || 0;
+  }
   function holdingValue(p, h, v) {
     if (!S.data.nav.length) return null;
     const now = S.data.nav[S.data.nav.length - 1];
@@ -571,7 +578,10 @@
     $('h-note').textContent = first ? 'Set up your two pies from the Pies tab, then invest your first cash.' : reb
       ? 'Open Pies: slices marked “changed” need updating, then press Rebalance on that pie in Trading 212. ' + (r.note || '')
       : (r.action === 'REBALANCE' && rebalanceDone() ? 'Done: you invested at this decision’s slices, so there’s nothing to trade. Their reasoning: ' : '') + (r.note || '');
-    const a = has ? v.a : 0, b = has ? v.b : 0, tot = a + b;
+    const cash = has ? cashOutside('A') + cashOutside('B') : 0;
+    $('h-cash').hidden = !(cash > 0.004);
+    $('h-cash').textContent = `${gbp(cash)} cash outside the pies (pie A’s defensive slice)`;
+    const a = has ? v.a - cashOutside('A') : 0, b = has ? v.b - cashOutside('B') : 0, tot = a + b + cash;
     const sa = tot ? (100 * a) / tot : 50;
     const bars = $('h-splitbar').children;
     bars[0].style.width = sa + '%'; bars[1].style.width = 100 - sa + '%';
@@ -757,7 +767,7 @@
   // ---------- pies ----------
   function renderPies() {
     const p = S.pie;
-    const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0).sort((a, b) => b.target - a.target);
+    const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0 && h.id !== 'CASH').sort((a, b) => b.target - a.target);
     const base = css(p === 'A' ? '--pa' : '--pb');
     const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length && !rebalanceDone();
     const colors = rows.map((h, i) => (h.id === 'CASH' ? css('--faint') : shade(base, i, rows.length)));
@@ -765,7 +775,7 @@
     $('pie-goal').textContent = p === 'A' ? 'Beat the FTSE All-World by 2% a year: the index at the core, tilted to what’s working.' : 'Maximum long-term return: about 12 steady-trend stocks, smaller sizes for riskier ones.';
     const v = current();
     const chips = $('pie-chips'); chips.replaceChildren();
-    if (v && S.contribs.length) chips.append(el('span', 'chip ' + (p === 'A' ? 'a' : 'b'), gbp(p === 'A' ? v.a : v.b)));
+    if (v && S.contribs.length) chips.append(el('span', 'chip ' + (p === 'A' ? 'a' : 'b'), gbp((p === 'A' ? v.a : v.b) - cashOutside(p))));
     const ret = S.data.summary[0][p === 'A' ? 'a_return' : 'b_return'];
     chips.append(el('span', 'chip ' + (ret >= 0 ? 'ok' : 'bad'), pct1(ret) + ' since start'));
     $('donut-n').textContent = rows.filter((h) => h.id !== 'CASH').length;
