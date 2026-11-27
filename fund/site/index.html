@@ -525,6 +525,26 @@
     return { a, b, total: a + b, bench, invested };
   }
   const current = () => (S.data && S.data.nav.length ? valueAt(S.data.nav[S.data.nav.length - 1]) : null);
+  // A rebalance is done once a payment was made on or after the decision it came from
+  // (the money went in at the new slices).
+  const rebalanceDone = () => S.contribs.some((c) => c.basis_date >= S.data.summary[0].data_date);
+  // Value of one holding: recorded buys (grown with the pie's index) when every payment
+  // lists its buys; otherwise the pie's estimated value times the model's weight.
+  const tick = (x) => String(x).replace(/^B_/, '').replace(/\..*$/, '').replace(/-.*$/, '');
+  function holdingValue(p, h, v) {
+    if (!S.data.nav.length) return null;
+    const now = S.data.nav[S.data.nav.length - 1];
+    if (S.contribs.length && S.contribs.every((c) => c.buys && c.buys[p])) {
+      let tot = 0;
+      for (const c of S.contribs) {
+        const at = navAt(c.basis_date) || now;
+        const amt = c.buys[p][h.id === 'CASH' ? 'CASH' : tick(h.id)] || 0;
+        tot += h.id === 'CASH' ? amt : amt * now[p.toLowerCase()] / at[p.toLowerCase()];
+      }
+      return tot;
+    }
+    return v ? (p === 'A' ? v.a : v.b) * (Number(h.current) || h.target) / 100 : null;
+  }
 
   // ---------- home ----------
   function renderHome() {
@@ -543,14 +563,14 @@
       $('h-sub').textContent = 'Invest your first cash to start tracking.';
     }
     const first = !S.contribs.length;
-    const reb = r.action === 'REBALANCE' && !first;
+    const reb = r.action === 'REBALANCE' && !first && !rebalanceDone();
     $('h-status').className = 'card status' + (reb ? ' is-rebalance' : first ? ' is-start' : '');
     $('h-status-ic').innerHTML = first ? ICON.star : reb ? ICON.swap : r.status !== 'ok' ? ICON.pause : ICON.check;
     $('h-status-title').textContent = first ? 'Ready to start' : reb ? 'Rebalance today' : r.status !== 'ok' ? 'No update today' : 'Hold · nothing to do';
     $('h-status-meta').textContent = `${fmtDay(r.data_date)} close` + (S.data.generated ? ` · checked ${fmtTime(new Date(S.data.generated))}` : '');
     $('h-note').textContent = first ? 'Set up your two pies from the Pies tab, then invest your first cash.' : reb
       ? 'Open Pies: slices marked “changed” need updating, then press Rebalance on that pie in Trading 212. ' + (r.note || '')
-      : (r.note || '');
+      : (r.action === 'REBALANCE' && rebalanceDone() ? 'Done: you invested at this decision’s slices, so there’s nothing to trade. Their reasoning: ' : '') + (r.note || '');
     const a = has ? v.a : 0, b = has ? v.b : 0, tot = a + b;
     const sa = tot ? (100 * a) / tot : 50;
     const bars = $('h-splitbar').children;
@@ -739,7 +759,7 @@
     const p = S.pie;
     const rows = S.data.holdings.filter((h) => h.pie === p && h.target > 0).sort((a, b) => b.target - a.target);
     const base = css(p === 'A' ? '--pa' : '--pb');
-    const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length;
+    const reb = S.data.summary[0].action === 'REBALANCE' && S.contribs.length && !rebalanceDone();
     const colors = rows.map((h, i) => (h.id === 'CASH' ? css('--faint') : shade(base, i, rows.length)));
     $('pie-title').textContent = p === 'A' ? 'Pie A · Index +2%' : 'Pie B · Stock selection';
     $('pie-goal').textContent = p === 'A' ? 'Beat the FTSE All-World by 2% a year: the index at the core, tilted to what’s working.' : 'Maximum long-term return: about 12 steady-trend stocks, smaller sizes for riskier ones.';
@@ -761,7 +781,8 @@
       if (reb && Number(h.trade)) nm.append(el('span', 'badge', 'changed'));
       mid.append(nm, el('div', 'sub', h.id === 'CASH' ? 'keep outside the pie' : `${h.id} · ${h.group}`));
       const rt = el('div', 'rt', (h.slice ?? h.target) + '%');
-      if (v && S.contribs.length && h.id !== 'CASH') rt.append(el('small', null, gbp((p === 'A' ? v.a : v.b) * (Number(h.current) || h.target) / 100)));
+      const hv = S.contribs.length ? holdingValue(p, h, v) : null;
+      if (hv !== null) rt.append(el('small', null, gbp(hv)));
       r.append(avatar(h.id, colors[i]), mid, rt);
       return tappable(r, String(h.key).split(':')[1]);
     }));
